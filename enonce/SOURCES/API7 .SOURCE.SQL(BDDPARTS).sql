@@ -1,3 +1,17 @@
+DROP TABLE API7.PARTS;
+DROP TABLE API7.PARTSUPP;
+DROP TABLE API7.SUPPLIER;
+
+DROP INDEX API7.PARTS_PK;
+DROP INDEX API7.SUPPLIER_PK;
+DROP INDEX API7.PARTSUPP_PK;
+
+DROP INDEX API7.PARTSPK;
+DROP INDEX API7.SUPPPK;
+DROP INDEX API7.PSPK;
+DROP INDEX API7.PSPFK;
+DROP INDEX API7.PSSFK;  
+
 --==============================================================
 -- Table : API7.PARTS
 --==============================================================
@@ -11,15 +25,15 @@ create table API7.PARTS (
 );
 
 --==============================================================
--- Index : PARTS_PK
+-- Index : API7.PARTS_PK
 --==============================================================
-create unique index PARTSPK on API7.PARTS (
+create unique index API7.PARTSPK on API7.PARTS (
    PNO                  ASC
 );
 
 
 --==============================================================
--- Table : SUPPLIER
+-- Table : API7.SUPPLIER
 --==============================================================
 create table API7.SUPPLIER (
    SNO                  CHAR(2)                not null,
@@ -29,14 +43,14 @@ create table API7.SUPPLIER (
 );
 
 --==============================================================
--- Index : SUPPLIER_PK
+-- Index : API7.SUPPLIER_PK
 --==============================================================
-create unique index SUPPPK on API7.SUPPLIER (
+create unique index API7.SUPPPK on API7.SUPPLIER (
    SNO                  ASC
 );
 
 --==============================================================
--- Table : PARTSUPP
+-- Table : API7.PARTSUPP
 --==============================================================
 create table API7.PARTSUPP (
    PNO                  CHAR(2)                not null,
@@ -46,24 +60,24 @@ create table API7.PARTSUPP (
 );
 
 --==============================================================
--- Index : PARTSUPP_PK
+-- Index : API7.PARTSUPP_PK
 --==============================================================
-create unique index PSPK on API7.PARTSUPP (
+create unique index API7.PSPK on API7.PARTSUPP (
    PNO                  ASC,
    SNO                  ASC
 );
 
 --==============================================================
--- Index : PARTSUPP_FK
+-- Index : API7.PARTSUPP_FK
 --==============================================================
-create index PSPFK on API7.PARTSUPP (
+create index API7.PSPFK on API7.PARTSUPP (
    PNO                  ASC
 );
 
 --==============================================================
--- Index : PARTSUPP2_FK
+-- Index : API7.PARTSUPP2_FK
 --==============================================================
-create index PSSFK on API7.PARTSUPP (
+create index API7.PSSFK on API7.PARTSUPP (
    SNO                  ASC
 );
 
@@ -107,12 +121,12 @@ INSERT INTO API7.PARTS (PNO, PNAME, COLOR, WEIGHT, CITY)
 VALUES ('P5', 'Cooling Fan', 'Black', 30, 'Miami');
 
 alter table API7.PARTSUPP
-   add constraint FPSS foreign key (SNO)
+   add constraint API7.FPSS foreign key (SNO)
       references API7.SUPPLIER (SNO)
       on delete restrict;
 
 alter table API7.PARTSUPP
-   add constraint FPSP foreign key (PNO)
+   add constraint API7.FPSP foreign key (PNO)
       references API7.PARTS (PNO)
       on delete restrict;
 

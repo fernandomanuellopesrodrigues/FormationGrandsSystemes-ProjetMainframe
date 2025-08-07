@@ -1,5 +1,29 @@
+DROP TABLE API7.ORDERS;
+DROP TABLE API7.CUSTOMERS;
+DROP TABLE API7.ITEMS;
+DROP TABLE API7.PRODUCTS;
+DROP TABLE API7.EMPLOYES;
+DROP TABLE API7.DEPTS;
+
+DROP INDEX API7.CUSTOMERS_PK;
+DROP INDEX API7.DEPTS_PK;
+DROP INDEX API7.EMPLOYEES_PK;
+DROP INDEX API7.PRODUCTS_PK;
+DROP INDEX API7.ITEMS_PK;
+DROP INDEX API7.ORDERS_PK;
+
+DROP INDEX API7.DEPTSPK;
+DROP INDEX API7.EMPPK;
+DROP INDEX API7.HAVEFK;
+DROP INDEX API7.ITOFK;
+DROP INDEX API7.ITPFK;
+DROP INDEX API7.ORDPK;
+DROP INDEX API7.SFK;
+DROP INDEX API7CFK;
+
+
 --==============================================================
--- Table : CUSTOMERS
+-- Table : API7.CUSTOMERS
 --==============================================================
 create table API7.CUSTOMERS (
    C_NO                 DEC(4)                 not null,
@@ -14,14 +38,14 @@ create table API7.CUSTOMERS (
 );
 
 --==============================================================
--- Index : CUSTOMERS_PK
+-- Index : API7.CUSTOMERS_PK
 --==============================================================
-create unique index CUSTOMERS_PK on API7.CUSTOMERS (
+create unique index API7.CUSTOMERS_PK on API7.CUSTOMERS (
    C_NO                 ASC
 );
 
 --==============================================================
--- Table : DEPTS
+-- Table : API7.DEPTS
 --==============================================================
 create table API7.DEPTS (
    DEPT                 DEC(4)                 not null,
@@ -30,9 +54,9 @@ create table API7.DEPTS (
 );
 
 --==============================================================
--- Index : DEPTS_PK
+-- Index : API7.DEPTS_PK
 --==============================================================
-create unique index DEPTSPK on API7.DEPTS (
+create unique index API7.DEPTSPK on API7.DEPTS (
    DEPT                 ASC
 );
 
@@ -54,21 +78,21 @@ create table API7.EMPLOYEES (
 );
 
 --==============================================================
--- Index : EMPLOYEES_PK
+-- Index : API7.EMPLOYEES_PK
 --==============================================================
-create unique index EMPPK on API7.EMPLOYEES (
+create unique index API7.EMPPK on API7.EMPLOYEES (
    E_NO                 ASC
 );
 
 --==============================================================
--- Index : HAVE_FK
+-- Index : API7.HAVE_FK
 --==============================================================
-create index HAVEFK on API7.EMPLOYEES (
+create index API7.HAVEFK on API7.EMPLOYEES (
    DEPT                 ASC
 );
 
 --==============================================================
--- Table : PRODUCTS
+-- Table : API7.PRODUCTS
 --==============================================================
 create table API7.PRODUCTS (
    P_NO                 CHAR(3)                not null,
@@ -78,13 +102,13 @@ create table API7.PRODUCTS (
 );
 
 --==============================================================
--- Index : PRODUCTS_PK
+-- Index : API7.PRODUCTS_PK
 --==============================================================
-create unique index PRPK on API7.PRODUCTS (
+create unique index API7.PRPK on API7.PRODUCTS (
    P_NO                 ASC
 );
 --==============================================================
--- Table : ITEMS
+-- Table : API7.ITEMS
 --==============================================================
 create table API7.ITEMS (
    O_NO                 DEC(3)                 not null,
@@ -95,9 +119,9 @@ create table API7.ITEMS (
 );
 
 --==============================================================
--- Index : ITEMS_PK
+-- Index : API7.ITEMS_PK
 --==============================================================
-create unique index ITEMSPK on API7.ITEMS (
+create unique index API7.ITEMSPK on API7.ITEMS (
    O_NO                 ASC,
    P_NO                 ASC
 );
@@ -128,23 +152,23 @@ create table API7.ORDERS (
 );
 
 --==============================================================
--- Index : ORDERS_PK
+-- Index : API7.ORDERS_PK
 --==============================================================
-create unique index ORDPK on API7.ORDERS (
+create unique index API7.ORDPK on API7.ORDERS (
    O_NO                 ASC
 );
 
 --==============================================================
--- Index : IS_ASSOCIATED_FK
+-- Index : API7.IS_ASSOCIATED_FK
 --==============================================================
-create index SFK on API7.ORDERS (
+create index API7.SFK on API7.ORDERS (
    S_NO                 ASC
 );
 
 --==============================================================
 -- Index : PASS_FK
 --==============================================================
-create index CFK on API7.ORDERS (
+create index API7.CFK on API7.ORDERS (
    C_NO                 ASC
 );
 
@@ -225,7 +249,7 @@ INSERT INTO API7.EMPLOYEES
 VALUES (20, 200, 'Smith', 'Alice', '456 Elm Street',
  'Los Angeles', 'CA', '90001', 22.50, 0.03);
 
-INSERT INTO EMPLOYEES
+INSERT INTO API7.EMPLOYEES
 (E_NO, DEPT, LNAME, FNAME, STREET, CITY, ST, ZIP, PAYRATE, COM)
 VALUES (30, 300, 'Johnson', 'David', '789 Oak Avenue',
  'Chicago', 'IL', '60601', 25.00, 0.02);
