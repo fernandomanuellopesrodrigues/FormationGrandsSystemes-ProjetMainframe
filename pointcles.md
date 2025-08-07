@@ -20,3 +20,10 @@ J'ai remarqué que certains prix sont manquants dans les fichiers de ventes (VEN
 Il faudra soit :
 Récupérer les prix depuis la table PRODUCTS.
 
+etape 1.
+1- corriger les sql , avec ajout de l'api
+2- executer les sqls
+3- verifier j'ai bien les données dans la bdd
+
+
+

@@ -121,12 +121,12 @@ INSERT INTO API7.PARTS (PNO, PNAME, COLOR, WEIGHT, CITY)
 VALUES ('P5', 'Cooling Fan', 'Black', 30, 'Miami');
 
 alter table API7.PARTSUPP
-   add constraint API7.FPSS foreign key (SNO)
+   add constraint FPSS foreign key (SNO)
       references API7.SUPPLIER (SNO)
       on delete restrict;
 
 alter table API7.PARTSUPP
-   add constraint API7.FPSP foreign key (PNO)
+   add constraint FPSP foreign key (PNO)
       references API7.PARTS (PNO)
       on delete restrict;
 

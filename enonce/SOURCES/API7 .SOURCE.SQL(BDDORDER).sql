@@ -19,7 +19,7 @@ DROP INDEX API7.ITOFK;
 DROP INDEX API7.ITPFK;
 DROP INDEX API7.ORDPK;
 DROP INDEX API7.SFK;
-DROP INDEX API7CFK;
+DROP INDEX API7.CFK;
 
 
 --==============================================================
