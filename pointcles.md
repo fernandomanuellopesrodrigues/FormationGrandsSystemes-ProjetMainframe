@@ -18,6 +18,5 @@ Données manquantes dans les fichiers :
 J'ai remarqué que certains prix sont manquants dans les fichiers de ventes (VENTEAS.txt). 
 
 Il faudra soit :
-Récupérer les prix depuis la table PRODUCTS
-Ou corriger les fichiers de données
+Récupérer les prix depuis la table PRODUCTS.
 
