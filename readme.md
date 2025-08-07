@@ -51,9 +51,9 @@ WORKING-STORAGE SECTION.
    05 WS-CURRENCY        PIC XX.
 
 01 WS-CONVERSION-RATES.
-   05 WS-EU-RATE         PIC 9V9999 VALUE 1.0850.  * Euro vers Dollar
-   05 WS-YU-RATE         PIC 9V9999 VALUE 0.1450.  * Yuan vers Dollar
-   05 WS-DO-RATE         PIC 9V9999 VALUE 1.0000.  * Dollar (référence)
+   05 WS-EU-RATE   PIC 9V9999 VALUE 1.0850.  * Euro vers Dollar
+   05 WS-YU-RATE   PIC 9V9999 VALUE 0.1450.  * Yuan vers Dollar
+   05 WS-DO-RATE   PIC 9V9999 VALUE 1.0000.  * Dollar (référence)
 
 ********************************************************
 
