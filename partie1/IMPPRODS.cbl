@@ -160,7 +160,7 @@
       * LECTURE D'UN ENREGISTREMENT                                  *
       *****************************************************************
        READ-NEXT-RECORD.
-           READ NEWPRODS-FILE INTO WS-INPUT-LINE
+           READ NEWPRODS-FILE
            IF WS-NP-OK
                ADD 1 TO WS-RECORDS-READ
            END-IF.
@@ -309,4 +309,3 @@
        CLOSE-FILES.
            CLOSE NEWPRODS-FILE
            CLOSE REPORT-FILE.
-           
