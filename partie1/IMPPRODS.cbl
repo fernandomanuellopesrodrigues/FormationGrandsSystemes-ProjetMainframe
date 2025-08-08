@@ -99,11 +99,10 @@
 
       * Variables DB2
            EXEC SQL INCLUDE SQLCA END-EXEC.
-
-       01  WS-SQL-FIELDS.
-           05  WS-SQL-PRODUCT-NO       PIC X(3).
-           05  WS-SQL-DESCRIPTION      PIC X(30).
-           05  WS-SQL-PRICE            PIC 9(3)V99 COMP-3.
+      * Variables hotes DB2 (sans DECLARE SECTION)
+       01  H-PRODUCT-NO                PIC X(3).
+       01  H-DESCRIPTION               PIC X(30).
+       01  H-PRICE                     PIC 9(3)V99.
 
        PROCEDURE DIVISION.
 
@@ -159,7 +158,7 @@
       * LECTURE D'UN ENREGISTREMENT                                  *
       *****************************************************************
        READ-NEXT-RECORD.
-           READ NEWPRODS-FILE INTO WS-INPUT-LINE
+           READ NEWPRODS-FILE
            IF WS-NP-OK
                ADD 1 TO WS-RECORDS-READ
            END-IF.
@@ -187,9 +186,9 @@
 
            PERFORM VARYING WS-CHAR-POS FROM 1 BY 1
                UNTIL WS-CHAR-POS > 30
-               OR WS-DESCRIPTION-RAW(WS-CHAR-POS:1) = SPACE
+               OR WS-DESCRIPTION(WS-CHAR-POS:1) = SPACE
 
-               MOVE WS-DESCRIPTION-RAW(WS-CHAR-POS:1)
+               MOVE WS-DESCRIPTION(WS-CHAR-POS:1)
                        TO WS-CURRENT-CHAR
 
                IF WS-CURRENT-CHAR = SPACE
@@ -230,7 +229,7 @@
       * CONVERSION DE DEVISE                                         *
       *****************************************************************
        CONVERT-CURRENCY.
-           MOVE FUNCTION NUMVAL(WS-PRICE-RAW) TO WS-PRICE-NUMERIC
+           MOVE FUNCTION NUMVAL(WS-PRICE) TO WS-PRICE-NUMERIC
 
            EVALUATE WS-CURRENCY
                WHEN 'EU'
@@ -251,14 +250,15 @@
       * INSERTION EN BASE DE DONNEES                                 *
       *****************************************************************
        INSERT-PRODUCT.
-           MOVE WS-PRODUCT-NO TO WS-SQL-PRODUCT-NO
-           MOVE WS-FORMATTED-DESC TO WS-SQL-DESCRIPTION
-           MOVE WS-CONVERTED-PRICE TO WS-SQL-PRICE
+           MOVE WS-PRODUCT-NO TO H-PRODUCT-NO
+           MOVE WS-FORMATTED-DESC TO H-DESCRIPTION
+           MOVE WS-CONVERTED-PRICE TO H-PRICE
 
            EXEC SQL
-               INSERT INTO API7.PRODUCTS (P_NO, DESCRIPTION, PRICE)
-               VALUES (:WS-SQL-PRODUCT-NO, :WS-SQL-DESCRIPTION,
-                           :WS-SQL-PRICE);
+               INSERT INTO API7.PRODUCTS
+               (P_NO, DESCRIPTION, PRICE)
+               VALUES
+               (:H-PRODUCT-NO, :H-DESCRIPTION, :H-PRICE)
            END-EXEC
 
            IF SQLCODE = 0
