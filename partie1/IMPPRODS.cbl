@@ -1,4 +1,3 @@
-
        IDENTIFICATION DIVISION.
        PROGRAM-ID. IMPPRODS.
        AUTHOR. GROUPE3.
@@ -28,7 +27,7 @@
        DATA DIVISION.
        FILE SECTION.
        FD  NEWPRODS-FILE.
-       01  NEWPRODS-RECORD            
+       01  NEWPRODS-RECORD
            05 WS-PRODUCT-NO            PIC X(3).
            05 FILLER                   PIC X VALUE ';'.
            05 WS-DESCRIPTION           PIC X(30).
@@ -36,7 +35,7 @@
            05 WS-PRICE                 PIC 9(3)V99.
            05 FILLER                   PIC X VALUE ';'.
            05 WS-CURRENCY              PIC XX.
-       
+
        FD  REPORT-FILE.
        01  REPORT-RECORD               PIC X(132).
 
@@ -65,10 +64,10 @@
        01  WS-WORK-FIELDS.
            05  WS-PRICE-NUMERIC        PIC 9(3)V99.
            05  WS-CONVERSION-RATE      PIC 9V9999.
-           05  WS-TEMP-PRICE           PIC 9(5)V9999.  
-      * pour le formatage de la description        
+           05  WS-TEMP-PRICE           PIC 9(5)V9999.
+      * pour le formatage de la description
            05  WS-CHAR-POS             PIC 9(2).
-           05  WS-CURRENT-CHAR         PIC X.       
+           05  WS-CURRENT-CHAR         PIC X.
            05  WS-NEW-WORD-FLAG        PIC X VALUE 'Y'.
 
       * Compteurs et statistiques
@@ -104,7 +103,7 @@
        01  WS-SQL-FIELDS.
            05  WS-SQL-PRODUCT-NO       PIC X(3).
            05  WS-SQL-DESCRIPTION      PIC X(30).
-           05  WS-SQL-PRICE            PIC 9(3)V99.
+           05  WS-SQL-PRICE            PIC 9(3)V99 COMP-3.
 
        PROCEDURE DIVISION.
 
@@ -132,7 +131,7 @@
 
            OPEN OUTPUT REPORT-FILE
            IF NOT WS-RP-OK
-               DISPLAY 'ERREUR OUVERTURE FICHIER RAPPORT: ' 
+               DISPLAY 'ERREUR OUVERTURE FICHIER RAPPORT: '
                        WS-RP-STATUS
                STOP RUN
            END-IF
@@ -160,7 +159,7 @@
       * LECTURE D'UN ENREGISTREMENT                                  *
       *****************************************************************
        READ-NEXT-RECORD.
-           READ NEWPRODS-FILE
+           READ NEWPRODS-FILE INTO WS-INPUT-LINE
            IF WS-NP-OK
                ADD 1 TO WS-RECORDS-READ
            END-IF.
@@ -190,11 +189,11 @@
                UNTIL WS-CHAR-POS > 30
                OR WS-DESCRIPTION-RAW(WS-CHAR-POS:1) = SPACE
 
-               MOVE WS-DESCRIPTION-RAW(WS-CHAR-POS:1) 
+               MOVE WS-DESCRIPTION-RAW(WS-CHAR-POS:1)
                        TO WS-CURRENT-CHAR
 
                IF WS-CURRENT-CHAR = SPACE
-                   MOVE WS-CURRENT-CHAR TO 
+                   MOVE WS-CURRENT-CHAR TO
                        WS-FORMATTED-DESC(WS-CHAR-POS:1)
                    MOVE 'Y' TO WS-NEW-WORD-FLAG
                ELSE
@@ -204,7 +203,7 @@
                    ELSE
                        PERFORM CONVERT-TO-LOWER
                    END-IF
-                   MOVE WS-CURRENT-CHAR TO 
+                   MOVE WS-CURRENT-CHAR TO
                        WS-FORMATTED-DESC(WS-CHAR-POS:1)
                END-IF
            END-PERFORM.
@@ -259,7 +258,7 @@
            EXEC SQL
                INSERT INTO API7.PRODUCTS (P_NO, DESCRIPTION, PRICE)
                VALUES (:WS-SQL-PRODUCT-NO, :WS-SQL-DESCRIPTION,
-                           :WS-SQL-PRICE)
+                           :WS-SQL-PRICE);
            END-EXEC
 
            IF SQLCODE = 0
@@ -309,3 +308,4 @@
        CLOSE-FILES.
            CLOSE NEWPRODS-FILE
            CLOSE REPORT-FILE.
+
