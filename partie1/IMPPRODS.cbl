@@ -1,350 +1,417 @@
-000100 IDENTIFICATION DIVISION.
-000200 PROGRAM-ID. IMPPRODS.
-000300 AUTHOR. GROUPE3.
-000400*****************************************************************
-000500* PROGRAMME : IMPORT DES NOUVEAUX PRODUITS                      *
-000600* OBJECTIF  : LIRE LE FICHIER PROJET.NEWPRODS.DATA ET           *
-000700*             INSERER LES DONNEES EN BASE API7.PRODUCTS         *
-000800* ENTREE    : FICHIER CSV AVEC SEPARATEUR ;                     *
-000900* SORTIE    : INSERTION EN BASE DB2                             *
-001000*****************************************************************
-001100
-001200 ENVIRONMENT DIVISION.
-001300 INPUT-OUTPUT SECTION.
-001400 FILE-CONTROL.
-001500     SELECT NEWPRODS-FILE
-001600         ASSIGN TO FNPRODS
-001700         ORGANIZATION IS SEQUENTIAL
-001800         ACCESS MODE IS SEQUENTIAL
-001900         FILE STATUS IS WS-NP-STATUS.
-002000
-002100     SELECT REPORT-FILE
-002200         ASSIGN TO FREPORT
-002300         ORGANIZATION IS SEQUENTIAL
-002400         ACCESS MODE IS SEQUENTIAL
-002500         FILE STATUS IS WS-RP-STATUS.
-002600
-002700 DATA DIVISION.
-002800 FILE SECTION.
-002900 FD  NEWPRODS-FILE.
-003000 01  NEWPRODS-RECORD             PIC X(45).
-003800
-003900 FD  REPORT-FILE.
-004000 01  REPORT-RECORD               PIC X(132).
-004100
-004200 WORKING-STORAGE SECTION.
-004300
-004400* VARIABLES DE CONTROLE DES FICHIERS
-004500 01  WS-NP-STATUS                PIC XX VALUE SPACES.
-004600     88  WS-NP-OK                VALUE '00'.
-004700     88  WS-NP-EOF               VALUE '10'.
-004800
-004900 01  WS-RP-STATUS                PIC XX VALUE SPACES.
-005000     88  WS-RP-OK                VALUE '00'.
-005100
-005110*STRUCTURE DES DONNEES PRODUIT
-005120 01  WS-PRODUCT-DATA.
-005130      05  WS-PRODUCT-NO           PIC X(3).
-005140      05  WS-DESCRIPTION          PIC X(30).
-005150      05  WS-PRICE                PIC 9(3)V99.
-005160      05  WS-CURRENCY             PIC XX.
-005161
-005170* VARIABLES DE PARSING CSV
-005180 01  WS-PARSING-FIELDS.
-005190     05  WS-INPUT-LINE           PIC X(45).
-005191     05  WS-FIELD-POINTER        PIC 9(2).
-005192     05  WS-FIELD-LENGTH         PIC 9(2).
-005193     05  WS-SEMICOLON-POS        PIC 9(2).
-005194     05  WS-EXTRACTED-FIELD      PIC X(30).
-005202
-005210* DONNEES FORMATEES POUR INSERTION
-005300 01  WS-FORMATTED-DATA.
-005400     05  WS-FORMATTED-DESC       PIC X(30).
-005500     05  WS-CONVERTED-PRICE      PIC 9(3)V99.
-005600
-005700* TAUX DE CONVERSION DES DEVISES
-005800 01  WS-CONVERSION-RATES.
-005900     05  WS-EU-RATE              PIC 9V9999 VALUE 1.0850.
-006000     05  WS-YU-RATE              PIC 9V9999 VALUE 0.1450.
-006100     05  WS-DO-RATE              PIC 9V9999 VALUE 1.0000.
-006200
-006300* VARIABLES DE TRAVAIL
-006400 01  WS-WORK-FIELDS.
-006600     05  WS-CONVERSION-RATE      PIC 9V9999.
-006700     05  WS-TEMP-PRICE           PIC 9(5)V9999.
-006710
-006800* POUR LE FORMATAGE DE LA DESCRIPTION
-006900     05  WS-CHAR-POS             PIC 9(2).
-007000     05  I                       PIC 9(2).
-007200
-007300* COMPTEURS ET STATISTIQUES
-007400 01  WS-COUNTERS.
-007500     05  WS-RECORDS-READ         PIC 9(5) VALUE ZERO.
-007600     05  WS-RECORDS-INSERTED     PIC 9(5) VALUE ZERO.
-007700     05  WS-RECORDS-ERROR        PIC 9(5) VALUE ZERO.
-007800
-007900* MESSAGES DE RAPPORT
-008000 01  WS-REPORT-LINES.
-008100     05  WS-HEADER-LINE          PIC X(132) VALUE
-008200         'RAPPORT D''IMPORT DES PRODUITS'.
-008300     05  WS-SEPARATOR-LINE       PIC X(132) VALUE ALL '-'.
-008400     05  WS-DETAIL-LINE.
-008500         10  FILLER              PIC X(10) VALUE 'PRODUIT: '.
-008600         10  WS-RPT-PRODUCT      PIC X(3).
-008700         10  FILLER              PIC X(5) VALUE ' - '.
-008800         10  WS-RPT-DESC         PIC X(30).
-008900         10  FILLER              PIC X(5) VALUE ' - '.
-009000         10  WS-RPT-PRICE        PIC ZZ9.99.
-009100         10  FILLER              PIC X(5) VALUE ' USD'.
-009200     05  WS-SUMMARY-LINE.
-009300         10  FILLER          PIC X(20) VALUE 'TOTAL TRAITES: '.
-009400         10  WS-RPT-TOTAL        PIC ZZ,ZZ9.
-009500         10  FILLER              PIC X(20) VALUE ' - INSERES: '.
-009600         10  WS-RPT-INSERTED     PIC ZZ,ZZ9.
-009700         10  FILLER              PIC X(20) VALUE ' - ERREURS: '.
-009800         10  WS-RPT-ERRORS       PIC ZZ,ZZ9.
-009900
-010000* VARIABLES DB2
-010100     EXEC SQL INCLUDE SQLCA END-EXEC.
-010200* VARIABLES HOTES DB2 (SANS DECLARE SECTION)
-010300 01  H-PRODUCT-NO                PIC X(3).
-010400 01  H-DESCRIPTION               PIC X(30).
-010500 01  H-PRICE                     PIC S9(2)V9(2) USAGE COMP-3.
-010600
-010700 PROCEDURE DIVISION.
-010800
-010900*****************************************************************
-011000* PROGRAMME PRINCIPAL                                           *
-011100*****************************************************************
-011200     PERFORM INITIALIZATION
-011300     PERFORM PROCESS-FILE
-011400     PERFORM FINALIZATION
-011500     STOP RUN.
-011600
-011700*****************************************************************
-011800* INITIALISATION                                               *
-011900*****************************************************************
-012000 INITIALIZATION.
-012100     DISPLAY 'DEBUT DU PROGRAMME IMPPRODS'
-012200
-012300* OUVERTURE DES FICHIERS
-012400     OPEN INPUT NEWPRODS-FILE
-012500     IF NOT WS-NP-OK
-012600         DISPLAY 'ERREUR OUVERTURE FICHIER NEWPRODS: '
-012700                 WS-NP-STATUS
-012710* TODO FAIRE DES ABBEND
-012800         STOP RUN
-012900     END-IF
-013000
-013100     OPEN OUTPUT REPORT-FILE
-013200     IF NOT WS-RP-OK
-013300         DISPLAY 'ERREUR OUVERTURE FICHIER RAPPORT: '
-013400                 WS-RP-STATUS
-013410* TODO FAIRE UN ABBEND
-013500         STOP RUN
-013600     END-IF
-013700
-013800* ECRITURE DE L'EN-TETE DU RAPPORT
-013900     WRITE REPORT-RECORD FROM WS-HEADER-LINE
-014000     WRITE REPORT-RECORD FROM WS-SEPARATOR-LINE
-014100
-014200* INITIALISATION DES COMPTEURS
-014300     MOVE ZERO TO WS-RECORDS-READ
-014400     MOVE ZERO TO WS-RECORDS-INSERTED
-014500     MOVE ZERO TO WS-RECORDS-ERROR.
-014600
-014700*****************************************************************
-014800* TRAITEMENT DU FICHIER                                        *
-014900*****************************************************************
-015000 PROCESS-FILE.
-015100     PERFORM READ-NEXT-RECORD
-015200     PERFORM UNTIL WS-NP-EOF
-015300         PERFORM PROCESS-RECORD
-015400         PERFORM READ-NEXT-RECORD
-015500     END-PERFORM.
-015600
-015700*****************************************************************
-015800* LECTURE D'UN ENREGISTREMENT                                  *
-015900*****************************************************************
-016000 READ-NEXT-RECORD.
-016100     READ NEWPRODS-FILE
-016200     IF WS-NP-OK
-016201         MOVE NEWPRODS-RECORD TO WS-INPUT-LINE
-016210         DISPLAY 'LIGNE LUE :' WS-INPUT-LINE
-016300         ADD 1 TO WS-RECORDS-READ
-016400     END-IF.
-016500
-016600*****************************************************************
-016700* TRAITEMENT D'UN ENREGISTREMENT                               *
-016800*****************************************************************
-016900 PROCESS-RECORD.
-017000     PERFORM PARSE-CSV-LINE
-017100     IF WS-PRODUCT-NO NOT = SPACES
-017200         PERFORM FORMAT-DESCRIPTION
-017300         PERFORM CONVERT-CURRENCY
-017400         PERFORM INSERT-PRODUCT
-017410     ELSE
-017500         DISPLAY 'LIGNE IGNOREE (VIDE)'
-017600         ADD 1 TO WS-RECORDS-ERROR
-017700     END-IF.
-017800
-017900*****************************************************************
-018000* ANALYSE DE LA LIGNE CSV                                      *
-018100*****************************************************************
-018200 PARSE-CSV-LINE.
-018300     MOVE 1 TO WS-FIELD-POINTER
-018400     MOVE SPACES TO WS-PRODUCT-DATA
-018500
-018600* EXTRACTION DU NUMERO DE PRODUIT
-018700     PERFORM EXTRACT-FIELD
-018800     MOVE WS-EXTRACTED-FIELD TO WS-PRODUCT-NO
-018900
-019000* EXTRACTION DE LA DESCRIPTION
-019100     PERFORM EXTRACT-FIELD
-019200     MOVE WS-EXTRACTED-FIELD TO WS-DESCRIPTION
-019300
-019400* EXTRACTION DU PRIX
-019410* TODO IMPLEMENTER LA CONVERTION
-019500     PERFORM EXTRACT-FIELD
-019510     DISPLAY 'PRICE EXTRACTED:' WS-EXTRACTED-FIELD
-019600     MOVE WS-EXTRACTED-FIELD TO WS-PRICE
-019610     DISPLAY 'PRICE APRES CONV:' WS-PRICE
-019700
-019800* EXTRACTION DE LA DEVISE
-019900     PERFORM EXTRACT-FIELD
-020000     MOVE WS-EXTRACTED-FIELD TO WS-CURRENCY
-020100
-020101     DISPLAY 'INFOS EXTRAITES :' WS-PRODUCT-DATA.
-020102
-020110* TODO A ESSAYER AVEC UN INSPECT
-020200*****************************************************************
-020300* EXTRACTION D'UN CHAMP CSV                                    *
-020400*****************************************************************
-020500 EXTRACT-FIELD.
-020600     MOVE SPACES TO WS-EXTRACTED-FIELD
-020700     MOVE 0 TO WS-FIELD-LENGTH
-020800
-020900* RECHERCHE DU PROCHAIN POINT-VIRGULE
-021000     PERFORM VARYING WS-SEMICOLON-POS FROM WS-FIELD-POINTER BY 1
-021100         UNTIL WS-SEMICOLON-POS > 45
-021200         OR WS-INPUT-LINE(WS-SEMICOLON-POS:1) = ';'
-021400     END-PERFORM
-021500
-021600* CALCUL DE LA LONGUEUR DU CHAMP
-021700     COMPUTE WS-FIELD-LENGTH = WS-SEMICOLON-POS - WS-FIELD-POINTER
-021800
-021900* EXTRACTION DU CHAMP SI LONGUEUR VALIDE
-022000     IF WS-FIELD-LENGTH > 0 AND WS-FIELD-LENGTH <= 30
-022100         MOVE WS-INPUT-LINE(WS-FIELD-POINTER:WS-FIELD-LENGTH)
-022200             TO WS-EXTRACTED-FIELD
-022300     END-IF
-022400
-022500* POSITIONNEMENT POUR LE CHAMP SUIVANT
-022600     COMPUTE WS-FIELD-POINTER = WS-SEMICOLON-POS + 1.
-022700
-022800*****************************************************************
-022900* FORMATAGE DE LA DESCRIPTION                                  *
-023000*****************************************************************
-023001 FORMAT-DESCRIPTION.
-023002     MOVE SPACES TO WS-FORMATTED-DESC
-023003     MOVE 1 TO WS-CHAR-POS
-023007     PERFORM VARYING I FROM 1 BY 1
-023008            UNTIL I > LENGTH OF WS-DESCRIPTION
-023009        IF I = 1 OR WS-DESCRIPTION (I - 1:1) = ' '
-023010           MOVE FUNCTION UPPER-CASE(WS-DESCRIPTION (I:1))
-023011                TO WS-FORMATTED-DESC (WS-CHAR-POS:1)
-023012        ELSE
-023013           MOVE FUNCTION LOWER-CASE(WS-DESCRIPTION (I:1))
-023014                TO WS-FORMATTED-DESC(WS-CHAR-POS:1)
-023015        END-IF
-023016        ADD 1 TO WS-CHAR-POS
-023017     END-PERFORM.
-023028
-023049*****************************************************************
-023050* CONVERSION DE DEVISE                                         *
-023060*****************************************************************
-023100 CONVERT-CURRENCY.
-023300
-023400     EVALUATE WS-CURRENCY
-023500         WHEN 'EU'
-023600             MOVE WS-EU-RATE TO WS-CONVERSION-RATE
-023700         WHEN 'YU'
-023800             MOVE WS-YU-RATE TO WS-CONVERSION-RATE
-023900         WHEN 'DO'
-024000             MOVE WS-DO-RATE TO WS-CONVERSION-RATE
-024100         WHEN OTHER
-024200             DISPLAY 'DEVISE INCONNUE: ' WS-CURRENCY
-024300             MOVE WS-DO-RATE TO WS-CONVERSION-RATE
-024400     END-EVALUATE
-024500
-024600     COMPUTE WS-TEMP-PRICE = WS-PRICE * WS-CONVERSION-RATE
-024700     MOVE WS-TEMP-PRICE TO WS-CONVERTED-PRICE.
-024800
-024900*****************************************************************
-025000* INSERTION EN BASE DE DONNEES                                 *
-025100*****************************************************************
-025200 INSERT-PRODUCT.
-025300     MOVE WS-PRODUCT-NO TO H-PRODUCT-NO
-025400     MOVE WS-FORMATTED-DESC TO H-DESCRIPTION
-025500     MOVE WS-CONVERTED-PRICE TO H-PRICE
-025510     DISPLAY 'INSERTION EN BDD D''UN NOUVEAU PRODUIT'
-025520     DISPLAY 'PRODUCT NO  : ' H-PRODUCT-NO
-025530     DISPLAY 'DESCRIPTION : ' H-DESCRIPTION
-025540     DISPLAY 'PRICE       : ' H-PRICE
-025600
-025700     EXEC SQL
-025800         INSERT INTO API7.PRODUCTS
-025900         (P_NO, DESCRIPTION, PRICE)
-026000         VALUES
-026100         (:H-PRODUCT-NO, :H-DESCRIPTION, :H-PRICE)
-026200     END-EXEC
-026300* TODO GERER LES DOUBLON SQLCODE = 80
-026310* FAIRE UN UPDATE ?
-026400     IF SQLCODE = 0
-026500         ADD 1 TO WS-RECORDS-INSERTED
-026600         PERFORM WRITE-DETAIL-LINE
-026700         DISPLAY 'PRODUIT INSERE: ' WS-PRODUCT-NO
-026800     ELSE
-026900         ADD 1 TO WS-RECORDS-ERROR
-027000         DISPLAY 'ERREUR INSERTION PRODUIT: ' WS-PRODUCT-NO
-027100         DISPLAY 'SQLCODE: ' SQLCODE
-027200         EXEC SQL ROLLBACK END-EXEC
-027300     END-IF.
-027400
-027500*****************************************************************
-027600* ECRITURE LIGNE DE DETAIL                                     *
-027700*****************************************************************
-027800 WRITE-DETAIL-LINE.
-027900     MOVE WS-PRODUCT-NO TO WS-RPT-PRODUCT
-028000     MOVE WS-FORMATTED-DESC TO WS-RPT-DESC
-028100     MOVE WS-CONVERTED-PRICE TO WS-RPT-PRICE
-028200     WRITE REPORT-RECORD FROM WS-DETAIL-LINE.
-028300
-028400*****************************************************************
-028500* FINALISATION                                                 *
-028600*****************************************************************
-028700 FINALIZATION.
-028800     PERFORM WRITE-SUMMARY
-028900     PERFORM CLOSE-FILES
-029000     DISPLAY 'FIN DU PROGRAMME IMPPRODS'
-029100     DISPLAY 'TOTAL ENREGISTREMENTS LUS: ' WS-RECORDS-READ
-029200     DISPLAY 'TOTAL PRODUITS INSERES: ' WS-RECORDS-INSERTED
-029300     DISPLAY 'TOTAL ERREURS: ' WS-RECORDS-ERROR.
-029400
-029500*****************************************************************
-029600* ECRITURE DU RESUME                                           *
-029700*****************************************************************
-029800 WRITE-SUMMARY.
-029900     WRITE REPORT-RECORD FROM WS-SEPARATOR-LINE
-030000     MOVE WS-RECORDS-READ TO WS-RPT-TOTAL
-030100     MOVE WS-RECORDS-INSERTED TO WS-RPT-INSERTED
-030200     MOVE WS-RECORDS-ERROR TO WS-RPT-ERRORS
-030300     WRITE REPORT-RECORD FROM WS-SUMMARY-LINE.
-030400
-030500*****************************************************************
-030600* FERMETURE DES FICHIERS                                       *
-030700*****************************************************************
-030800 CLOSE-FILES.
-030900     CLOSE NEWPRODS-FILE
-031000     CLOSE REPORT-FILE.
-031100
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. IMPPRODS.
+       AUTHOR. GROUPE3.
+      *****************************************************************
+      * PROGRAMME : IMPORT DES NOUVEAUX PRODUITS                      *
+      * OBJECTIF  : LIRE LE FICHIER PROJET.NEWPRODS.DATA ET           *
+      *             INSERER LES DONNEES EN BASE API7.PRODUCTS         *
+      * ENTREE    : FICHIER CSV AVEC SEPARATEUR ;                     *
+      * SORTIE    : INSERTION EN BASE DB2                             *
+      *****************************************************************
+      
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT NEWPRODS-FILE
+               ASSIGN TO FNPRODS
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-NP-STATUS.
+      
+           SELECT REPORT-FILE
+               ASSIGN TO FREPORT
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-RP-STATUS.
+      
+       DATA DIVISION.
+       FILE SECTION.
+       FD  NEWPRODS-FILE.
+       01  NEWPRODS-RECORD             PIC X(45).
+      
+       FD  REPORT-FILE.
+       01  REPORT-RECORD               PIC X(132).
+      
+       WORKING-STORAGE SECTION.
+      
+      * VARIABLES DE CONTROLE DES FICHIERS
+       01  WS-NP-STATUS                PIC XX VALUE SPACES.
+           88  WS-NP-OK                VALUE '00'.
+           88  WS-NP-EOF               VALUE '10'.
+      
+       01  WS-RP-STATUS                PIC XX VALUE SPACES.
+           88  WS-RP-OK                VALUE '00'.
+      
+      *STRUCTURE DES DONNEES PRODUIT
+       01  WS-PRODUCT-DATA.
+            05  WS-PRODUCT-NO           PIC X(3).
+            05  WS-DESCRIPTION          PIC X(30).
+            05  WS-PRICE                PIC 9(3)V99.
+            05  WS-CURRENCY             PIC XX.
+      
+      * VARIABLES DE PARSING CSV
+       01  WS-PARSING-FIELDS.
+           05  WS-INPUT-LINE           PIC X(45).
+           05  WS-FIELD-POINTER        PIC 9(2).
+           05  WS-FIELD-LENGTH         PIC 9(2).
+           05  WS-SEMICOLON-POS        PIC 9(2).
+           05  WS-EXTRACTED-FIELD      PIC X(30).
+      
+      * DONNEES FORMATEES POUR INSERTION
+       01  WS-FORMATTED-DATA.
+           05  WS-FORMATTED-DESC       PIC X(30).
+           05  WS-CONVERTED-PRICE      PIC 9(3)V99.
+      
+      * TAUX DE CONVERSION DES DEVISES
+       01  WS-CONVERSION-RATES.
+           05  WS-EU-RATE              PIC 9V9999 VALUE 1.0850.
+           05  WS-YU-RATE              PIC 9V9999 VALUE 0.1450.
+           05  WS-DO-RATE              PIC 9V9999 VALUE 1.0000.
+      
+      * VARIABLES DE TRAVAIL
+       01  WS-WORK-FIELDS.
+           05  WS-CONVERSION-RATE      PIC 9V9999.
+           05  WS-TEMP-PRICE           PIC 9(5)V9999.
+      
+      * POUR LE FORMATAGE DE LA DESCRIPTION
+           05  WS-CHAR-POS             PIC 9(2).
+           05  I                       PIC 9(2).
+      
+      * COMPTEURS ET STATISTIQUES
+       01  WS-COUNTERS.
+           05  WS-RECORDS-READ         PIC 9(5) VALUE ZERO.
+           05  WS-RECORDS-INSERTED     PIC 9(5) VALUE ZERO.
+           05  WS-RECORDS-ERROR        PIC 9(5) VALUE ZERO.
+           05  WS-COMMIT-COUNT         PIC 9(5) VALUE ZERO.
+      
+      * MESSAGES DE RAPPORT
+       01  WS-REPORT-LINES.
+           05  WS-HEADER-LINE          PIC X(132) VALUE
+               'RAPPORT D''IMPORT DES PRODUITS'.
+           05  WS-SEPARATOR-LINE       PIC X(132) VALUE ALL '-'.
+           05  WS-DETAIL-LINE.
+               10  FILLER              PIC X(10) VALUE 'PRODUIT: '.
+               10  WS-RPT-PRODUCT      PIC X(3).
+               10  FILLER              PIC X(5) VALUE ' - '.
+               10  WS-RPT-DESC         PIC X(30).
+               10  FILLER              PIC X(5) VALUE ' - '.
+               10  WS-RPT-PRICE        PIC ZZ9.99.
+               10  FILLER              PIC X(5) VALUE ' USD'.
+           05  WS-SUMMARY-LINE.
+               10  FILLER          PIC X(20) VALUE 'TOTAL TRAITES: '.
+               10  WS-RPT-TOTAL        PIC ZZ,ZZ9.
+               10  FILLER              PIC X(20) VALUE ' - INSERES: '.
+               10  WS-RPT-INSERTED     PIC ZZ,ZZ9.
+               10  FILLER              PIC X(20) VALUE ' - ERREURS: '.
+               10  WS-RPT-ERRORS       PIC ZZ,ZZ9.
+           05  WS-TIMESTAMP-LINE       PIC X(132).
+      
+      * VARIABLES DB2
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+      * VARIABLES HOTES DB2 (SANS DECLARE SECTION)
+       01  H-PRODUCT-NO                PIC X(3).
+       01  H-DESCRIPTION               PIC X(30).
+       01  H-PRICE                     PIC S9(2)V9(2) USAGE COMP-3.
+      
+       PROCEDURE DIVISION.
+      
+      *****************************************************************
+      * PROGRAMME PRINCIPAL                                           *
+      *****************************************************************
+           PERFORM INITIALIZATION
+           PERFORM PROCESS-FILE
+           PERFORM FINALIZATION
+           STOP RUN.
+      
+      *****************************************************************
+      * INITIALISATION                                               *
+      *****************************************************************
+       INITIALIZATION.
+           DISPLAY 'DEBUT DU PROGRAMME IMPPRODS'
+      
+      * OUVERTURE DES FICHIERS
+           OPEN INPUT NEWPRODS-FILE
+           IF NOT WS-NP-OK
+               DISPLAY 'ERREUR OUVERTURE FICHIER NEWPRODS: '
+                       WS-NP-STATUS
+               MOVE 12 TO RETURN-CODE
+               PERFORM CLOSE-FILES
+               STOP RUN
+           END-IF
+      
+           OPEN OUTPUT REPORT-FILE
+           IF NOT WS-RP-OK
+               DISPLAY 'ERREUR OUVERTURE FICHIER RAPPORT: '
+                       WS-RP-STATUS
+               MOVE 12 TO RETURN-CODE
+               PERFORM CLOSE-FILES
+               STOP RUN
+           END-IF
+      
+      * ECRITURE DE L'EN-TETE DU RAPPORT
+           WRITE REPORT-RECORD FROM WS-HEADER-LINE
+           WRITE REPORT-RECORD FROM WS-SEPARATOR-LINE
+      
+      * INITIALISATION DES COMPTEURS
+           MOVE ZERO TO WS-RECORDS-READ
+           MOVE ZERO TO WS-RECORDS-INSERTED
+           MOVE ZERO TO WS-RECORDS-ERROR
+           MOVE ZERO TO WS-COMMIT-COUNT.
+      
+      *****************************************************************
+      * TRAITEMENT DU FICHIER                                        *
+      *****************************************************************
+       PROCESS-FILE.
+           PERFORM READ-NEXT-RECORD
+           PERFORM UNTIL WS-NP-EOF
+               PERFORM PROCESS-RECORD
+               PERFORM READ-NEXT-RECORD
+           END-PERFORM.
+      
+      *****************************************************************
+      * LECTURE D'UN ENREGISTREMENT                                  *
+      *****************************************************************
+       READ-NEXT-RECORD.
+           READ NEWPRODS-FILE
+           IF WS-NP-OK
+               MOVE NEWPRODS-RECORD TO WS-INPUT-LINE
+               DISPLAY 'LIGNE LUE :' WS-INPUT-LINE
+               ADD 1 TO WS-RECORDS-READ
+           ELSE
+               IF WS-NP-EOF
+                   DISPLAY 'FIN DE FICHIER NEWPRODS'
+               ELSE
+                   DISPLAY 'ERREUR LECTURE NEWPRODS, STATUS: '
+                   WS-NP-STATUS
+                   ADD 1 TO WS-RECORDS-ERROR
+               END-IF
+           END-IF.
+      
+      *****************************************************************
+      * TRAITEMENT D'UN ENREGISTREMENT                               *
+      *****************************************************************
+       PROCESS-RECORD.
+           PERFORM PARSE-CSV-LINE
+           IF WS-PRODUCT-NO NOT = SPACES
+               PERFORM FORMAT-DESCRIPTION
+               PERFORM CONVERT-CURRENCY
+               PERFORM INSERT-PRODUCT
+           ELSE
+               DISPLAY 'LIGNE IGNOREE (VIDE)'
+               ADD 1 TO WS-RECORDS-ERROR
+           END-IF.
+      
+      *****************************************************************
+      * ANALYSE DE LA LIGNE CSV                                      *
+      *****************************************************************
+       PARSE-CSV-LINE.
+           MOVE 1 TO WS-FIELD-POINTER
+           MOVE SPACES TO WS-PRODUCT-DATA
+      
+      * EXTRACTION DU NUMERO DE PRODUIT
+           PERFORM EXTRACT-FIELD
+           MOVE WS-EXTRACTED-FIELD TO WS-PRODUCT-NO
+      
+      * EXTRACTION DE LA DESCRIPTION
+           PERFORM EXTRACT-FIELD
+           MOVE WS-EXTRACTED-FIELD TO WS-DESCRIPTION
+      
+      * EXTRACTION DU PRIX
+      * TODO IMPLEMENTER LA CONVERTION
+           PERFORM EXTRACT-FIELD
+      * Normalisation basique: remplacer virgule par point et supprimer espaces
+           INSPECT WS-EXTRACTED-FIELD REPLACING ALL ',' BY '.'
+           INSPECT WS-EXTRACTED-FIELD REPLACING ALL ' ' BY ''
+           DISPLAY 'PRICE EXTRACTED:' WS-EXTRACTED-FIELD
+      * Conversion en numerique securisee via NUMVAL
+           MOVE FUNCTION NUMVAL(WS-EXTRACTED-FIELD) TO WS-PRICE
+           DISPLAY 'PRICE APRES CONV:' WS-PRICE
+      
+      * EXTRACTION DE LA DEVISE
+           PERFORM EXTRACT-FIELD
+           MOVE WS-EXTRACTED-FIELD TO WS-CURRENCY
+      
+      * Nettoyage simple de la description: compacter doubles espaces
+           INSPECT WS-DESCRIPTION REPLACING ALL '  ' BY ' '
+      
+           DISPLAY 'INFOS EXTRAITES :' WS-PRODUCT-DATA.
+      
+      * TODO A ESSAYER AVEC UN INSPECT
+      *****************************************************************
+      * EXTRACTION D'UN CHAMP CSV                                    *
+      *****************************************************************
+       EXTRACT-FIELD.
+           MOVE SPACES TO WS-EXTRACTED-FIELD
+           MOVE 0 TO WS-FIELD-LENGTH
+      
+      * RECHERCHE DU PROCHAIN POINT-VIRGULE
+           PERFORM VARYING WS-SEMICOLON-POS FROM WS-FIELD-POINTER BY 1
+               UNTIL WS-SEMICOLON-POS > 45
+               OR WS-INPUT-LINE(WS-SEMICOLON-POS:1) = ';'
+           END-PERFORM
+      
+      * CALCUL DE LA LONGUEUR DU CHAMP
+           COMPUTE WS-FIELD-LENGTH = WS-SEMICOLON-POS - WS-FIELD-POINTER
+      
+      * EXTRACTION DU CHAMP SI LONGUEUR VALIDE
+           IF WS-FIELD-LENGTH > 0 AND WS-FIELD-LENGTH <= 30
+               MOVE WS-INPUT-LINE(WS-FIELD-POINTER:WS-FIELD-LENGTH)
+                   TO WS-EXTRACTED-FIELD
+           END-IF
+      
+      * POSITIONNEMENT POUR LE CHAMP SUIVANT
+           COMPUTE WS-FIELD-POINTER = WS-SEMICOLON-POS + 1.
+      
+      *****************************************************************
+      * FORMATAGE DE LA DESCRIPTION                                  *
+      *****************************************************************
+       FORMAT-DESCRIPTION.
+           MOVE SPACES TO WS-FORMATTED-DESC
+           MOVE 1 TO WS-CHAR-POS
+           PERFORM VARYING I FROM 1 BY 1
+                  UNTIL I > LENGTH OF WS-DESCRIPTION
+              IF I = 1 OR WS-DESCRIPTION (I - 1:1) = ' '
+                 MOVE FUNCTION UPPER-CASE(WS-DESCRIPTION (I:1))
+                      TO WS-FORMATTED-DESC (WS-CHAR-POS:1)
+              ELSE
+                 MOVE FUNCTION LOWER-CASE(WS-DESCRIPTION (I:1))
+                      TO WS-FORMATTED-DESC(WS-CHAR-POS:1)
+              END-IF
+              ADD 1 TO WS-CHAR-POS
+           END-PERFORM.
+      
+      *****************************************************************
+      * CONVERSION DE DEVISE                                         *
+      *****************************************************************
+       CONVERT-CURRENCY.
+      
+           EVALUATE WS-CURRENCY
+               WHEN 'EU'
+                   MOVE WS-EU-RATE TO WS-CONVERSION-RATE
+               WHEN 'YU'
+                   MOVE WS-YU-RATE TO WS-CONVERSION-RATE
+               WHEN 'DO'
+                   MOVE WS-DO-RATE TO WS-CONVERSION-RATE
+               WHEN OTHER
+                   DISPLAY 'DEVISE INCONNUE: ' WS-CURRENCY
+                   MOVE WS-DO-RATE TO WS-CONVERSION-RATE
+           END-EVALUATE
+      
+           COMPUTE WS-TEMP-PRICE = WS-PRICE * WS-CONVERSION-RATE
+           MOVE WS-TEMP-PRICE TO WS-CONVERTED-PRICE.
+      
+      *****************************************************************
+      * INSERTION EN BASE DE DONNEES                                 *
+      *****************************************************************
+       INSERT-PRODUCT.
+           MOVE WS-PRODUCT-NO TO H-PRODUCT-NO
+           MOVE WS-FORMATTED-DESC TO H-DESCRIPTION
+           MOVE WS-CONVERTED-PRICE TO H-PRICE
+           DISPLAY 'INSERTION EN BDD D''UN NOUVEAU PRODUIT'
+           DISPLAY 'PRODUCT NO  : ' H-PRODUCT-NO
+           DISPLAY 'DESCRIPTION : ' H-DESCRIPTION
+           DISPLAY 'PRICE       : ' H-PRICE
+      
+           EXEC SQL
+               INSERT INTO API7.PRODUCTS
+               (P_NO, DESCRIPTION, PRICE)
+               VALUES
+               (:H-PRODUCT-NO, :H-DESCRIPTION, :H-PRICE)
+           END-EXEC
+      * Gestion duplicat cle: tenter UPDATE si -803
+           IF SQLCODE = 0
+               ADD 1 TO WS-RECORDS-INSERTED
+               ADD 1 TO WS-COMMIT-COUNT
+               PERFORM WRITE-DETAIL-LINE
+               DISPLAY 'PRODUIT INSERE: ' WS-PRODUCT-NO
+           ELSE
+               IF SQLCODE = -803
+                   EXEC SQL
+                       UPDATE API7.PRODUCTS
+                          SET DESCRIPTION = :H-DESCRIPTION,
+                              PRICE       = :H-PRICE
+                        WHERE P_NO        = :H-PRODUCT-NO
+                   END-EXEC
+                   IF SQLCODE = 0
+                       ADD 1 TO WS-RECORDS-INSERTED
+                       ADD 1 TO WS-COMMIT-COUNT
+                       PERFORM WRITE-DETAIL-LINE
+                       DISPLAY 'PRODUIT MIS A JOUR: ' WS-PRODUCT-NO
+                   ELSE
+                       ADD 1 TO WS-RECORDS-ERROR
+                       DISPLAY 'ECHEC UPDATE PRODUIT: ' WS-PRODUCT-NO
+                       DISPLAY 'SQLCODE: ' SQLCODE
+                       EXEC SQL ROLLBACK END-EXEC
+                   END-IF
+               ELSE
+                   ADD 1 TO WS-RECORDS-ERROR
+                   DISPLAY 'ERREUR INSERTION PRODUIT: ' WS-PRODUCT-NO
+                   DISPLAY 'SQLCODE: ' SQLCODE
+                   EXEC SQL ROLLBACK END-EXEC
+               END-IF
+           END-IF
+      
+      * COMMIT periodique tous les 100 traitements
+           IF WS-COMMIT-COUNT >= 100
+               EXEC SQL COMMIT END-EXEC
+               MOVE ZERO TO WS-COMMIT-COUNT
+               DISPLAY 'COMMIT PERIODIQUE EFFECTUE'
+           END-IF.
+      
+      *****************************************************************
+      * ECRITURE LIGNE DE DETAIL                                     *
+      *****************************************************************
+       WRITE-DETAIL-LINE.
+           MOVE WS-PRODUCT-NO TO WS-RPT-PRODUCT
+           MOVE WS-FORMATTED-DESC TO WS-RPT-DESC
+           MOVE WS-CONVERTED-PRICE TO WS-RPT-PRICE
+           WRITE REPORT-RECORD FROM WS-DETAIL-LINE.
+      
+      *****************************************************************
+      * FINALISATION                                                 *
+      *****************************************************************
+       FINALIZATION.
+      * Commit final avant fermeture
+           EXEC SQL COMMIT END-EXEC
+           PERFORM WRITE-SUMMARY
+           PERFORM CLOSE-FILES
+           DISPLAY 'FIN DU PROGRAMME IMPPRODS'
+           DISPLAY 'TOTAL ENREGISTREMENTS LUS: ' WS-RECORDS-READ
+           DISPLAY 'TOTAL PRODUITS INSERES: ' WS-RECORDS-INSERTED
+           DISPLAY 'TOTAL ERREURS: ' WS-RECORDS-ERROR.
+      
+      *****************************************************************
+      * ECRITURE DU RESUME                                           *
+      *****************************************************************
+       WRITE-SUMMARY.
+      * Ligne timestamp avec CURRENT-DATE
+           PERFORM BUILD-TIMESTAMP-LINE
+           WRITE REPORT-RECORD FROM WS-TIMESTAMP-LINE
+           WRITE REPORT-RECORD FROM WS-SEPARATOR-LINE
+           MOVE WS-RECORDS-READ TO WS-RPT-TOTAL
+           MOVE WS-RECORDS-INSERTED TO WS-RPT-INSERTED
+           MOVE WS-RECORDS-ERROR TO WS-RPT-ERRORS
+           WRITE REPORT-RECORD FROM WS-SUMMARY-LINE.
+      
+      *****************************************************************
+      * CONSTRUCTION DE LA LIGNE TIMESTAMP                           *
+      *****************************************************************
+       BUILD-TIMESTAMP-LINE.
+           MOVE SPACES TO WS-TIMESTAMP-LINE
+           STRING 'HORODATAGE: '
+                  FUNCTION CURRENT-DATE(1:4) '-'  
+                  FUNCTION CURRENT-DATE(5:2) '-'  
+                  FUNCTION CURRENT-DATE(7:2) ' '
+                  FUNCTION CURRENT-DATE(9:2) ':'  
+                  FUNCTION CURRENT-DATE(11:2) ':' 
+                  FUNCTION CURRENT-DATE(13:2)
+                  DELIMITED BY SIZE
+             INTO WS-TIMESTAMP-LINE.
+      
+      *****************************************************************
+      * FERMETURE DES FICHIERS                                       *
+      *****************************************************************
+       CLOSE-FILES.
+           CLOSE NEWPRODS-FILE
+           CLOSE REPORT-FILE.
+      
