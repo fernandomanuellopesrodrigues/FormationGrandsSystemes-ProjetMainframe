@@ -56,3 +56,10 @@
 //            DISP=(NEW,CATLG,DELETE),
 //            UNIT=SYSDA,SPACE=(TRK,(5,5)),
 //            DCB=(RECFM=FB,LRECL=132,BLKSIZE=13200)
+//SYSIN     DD  *
+EU=1.0850
+YU=0.1450
+DO=1.0000
+GB=1.2700
+JP=0.0064
+/* 

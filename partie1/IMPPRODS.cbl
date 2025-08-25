@@ -23,6 +23,12 @@
                ORGANIZATION IS SEQUENTIAL
                ACCESS MODE IS SEQUENTIAL
                FILE STATUS IS WS-RP-STATUS.
+
+           SELECT SYSIN-FILE
+               ASSIGN TO SYSIN
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-SI-STATUS.
       
        DATA DIVISION.
        FILE SECTION.
@@ -31,6 +37,9 @@
       
        FD  REPORT-FILE.
        01 REPORT-RECORD           PIC X(132).
+
+       FD  SYSIN-FILE.
+       01 SYSIN-RECORD            PIC X(80).
       
        WORKING-STORAGE SECTION.
       
@@ -41,6 +50,10 @@
       
        01 WS-RP-STATUS            PIC XX         VALUE SPACES.
           88 WS-RP-OK                            VALUE '00'.
+
+       01 WS-SI-STATUS            PIC XX         VALUE SPACES.
+          88 WS-SI-OK                            VALUE '00'.
+          88 WS-SI-EOF                           VALUE '10'.
       
       *STRUCTURE DES DONNEES PRODUIT
        01 WS-PRODUCT-DATA.
@@ -51,31 +64,46 @@
       
       * VARIABLES DE PARSING CSV
        01 WS-PARSING-FIELDS.
-          05 WS-INPUT-LINE        PIC X(45).
-          05 WS-FIELD-POINTER     PIC 9(2).
-          05 WS-FIELD-LENGTH      PIC 9(2).
-          05 WS-SEMICOLON-POS     PIC 9(2).
-          05 WS-EXTRACTED-FIELD   PIC X(30).
+          05 WS-INPUT-LINE        PIC X(45)      VALUE SPACES.
+          05 WS-FIELD-POINTER     PIC 9(2)       VALUE ZERO.
+          05 WS-FIELD-LENGTH      PIC 9(2)       VALUE ZERO.
+          05 WS-SEMICOLON-POS     PIC 9(2)       VALUE ZERO.
+          05 WS-EXTRACTED-FIELD   PIC X(30)      VALUE SPACES.
       
       * DONNEES FORMATEES POUR INSERTION
        01 WS-FORMATTED-DATA.
-          05 WS-FORMATTED-DESC    PIC X(30).
-          05 WS-CONVERTED-PRICE   PIC 9(3)V99.
+          05 WS-FORMATTED-DESC    PIC X(30)      VALUE SPACES.
+          05 WS-CONVERTED-PRICE   PIC 9(3)V99    VALUE ZERO.
       
-      * TAUX DE CONVERSION DES DEVISES
+      * TAUX DE CONVERSION DES DEVISES, utilise si rien en sysin
        01 WS-CONVERSION-RATES.
           05 WS-EU-RATE           PIC 9V9999     VALUE 1.0850.
           05 WS-YU-RATE           PIC 9V9999     VALUE 0.1450.
           05 WS-DO-RATE           PIC 9V9999     VALUE 1.0000.
+
+      * TABLE DYNAMIQUE DES TAUX (alimentee depuis SYSIN)
+       01 WS-RATE-TABLE.
+          05 WS-RATE-ENTRY OCCURS 20 TIMES INDEXED BY RT-IX.
+             10 WS-RT-CURR        PIC XX         VALUE SPACES.
+             10 WS-RT-RATE        PIC 9V9999     VALUE ZERO.
+
+       01 WS-RATE-COUNT           PIC 9(2)       VALUE ZERO.
+       01 WS-RT-IDX               PIC 9(2)       VALUE ZERO.
+
+      * VARIABLES DE PARSING SYSIN
+       01 WS-SI-LEFT              PIC XX         VALUE SPACES.
+       01 WS-SI-RIGHT             PIC X(20)      VALUE SPACES.
+       01 WS-SI-CURR              PIC XX         VALUE SPACES.
+       01 WS-SI-RATE-NUM          PIC 9V9999     VALUE ZERO.
       
       * VARIABLES DE TRAVAIL
        01 WS-WORK-FIELDS.
-          05 WS-CONVERSION-RATE   PIC 9V9999.
-          05 WS-TEMP-PRICE        PIC 9(5)V9999.
+          05 WS-CONVERSION-RATE   PIC 9V9999     VALUE ZERO.
+          05 WS-TEMP-PRICE        PIC 9(5)V9999  VALUE ZERO.
       
       * POUR LE FORMATAGE DE LA DESCRIPTION
-          05 WS-CHAR-POS          PIC 9(2).
-          05 I                    PIC 9(2).
+          05 WS-CHAR-POS          PIC 9(2)       VALUE ZERO.
+          05 I                    PIC 9(2)       VALUE ZERO.
       
       * COMPTEURS ET STATISTIQUES
        01 WS-COUNTERS.
@@ -98,12 +126,12 @@
              10 WS-RPT-PRICE      PIC ZZ9.99.
              10 FILLER            PIC X(5)       VALUE ' USD'.
           05 WS-SUMMARY-LINE.
-             10 FILLER            PIC X(20)      VALUE 'TOTAL TRAITES: '
-                                                                      .
+             10 FILLER            PIC X(15)      VALUE 'TOTAL TRAITES: '
+           .
              10 WS-RPT-TOTAL      PIC ZZ,ZZ9.
-             10 FILLER            PIC X(20)      VALUE ' - INSERES: '.
+             10 FILLER            PIC X(15)      VALUE ' - INSERES: '.
              10 WS-RPT-INSERTED   PIC ZZ,ZZ9.
-             10 FILLER            PIC X(20)      VALUE ' - ERREURS: '.
+             10 FILLER            PIC X(15)      VALUE ' - ERREURS: '.
              10 WS-RPT-ERRORS     PIC ZZ,ZZ9.
           05 WS-TIMESTAMP-LINE    PIC X(132).
       
@@ -112,7 +140,8 @@
       * VARIABLES HOTES DB2 (SANS DECLARE SECTION)
        01 H-PRODUCT-NO            PIC X(3).
        01 H-DESCRIPTION           PIC X(30).
-       01 H-PRICE                 PIC S9(2)V9(2) USAGE COMP-3.
+       01 H-PRICE                 PIC S9(2)V9(2) USAGE COMP-3
+                                                 VALUE +0.
       
        PROCEDURE DIVISION.
       
@@ -122,7 +151,7 @@
            PERFORM INITIALIZATION
            PERFORM PROCESS-FILE
            PERFORM FINALIZATION
-           STOP RUN.
+           GOBACK.
       
       *****************************************************************
       * INITIALISATION                                               *
@@ -137,7 +166,7 @@
                       WS-NP-STATUS
               MOVE 12 TO RETURN-CODE
               PERFORM CLOSE-FILES
-              STOP RUN
+              GOBACK
            END-IF
       
            OPEN OUTPUT REPORT-FILE
@@ -146,8 +175,11 @@
                       WS-RP-STATUS
               MOVE 12 TO RETURN-CODE
               PERFORM CLOSE-FILES
-              STOP RUN
+              GOBACK
            END-IF
+
+      * CHARGEMENT DES TAUX DEPUIS SYSIN
+           PERFORM LOAD-RATES
       
       * ECRITURE DE L'EN-TETE DU RAPPORT
            WRITE REPORT-RECORD FROM WS-HEADER-LINE
@@ -157,7 +189,8 @@
            MOVE ZERO TO WS-RECORDS-READ
            MOVE ZERO TO WS-RECORDS-INSERTED
            MOVE ZERO TO WS-RECORDS-ERROR
-           MOVE ZERO TO WS-COMMIT-COUNT.
+           MOVE ZERO TO WS-COMMIT-COUNT
+           .
       
       *****************************************************************
       * TRAITEMENT DU FICHIER                                        *
@@ -167,7 +200,8 @@
            PERFORM UNTIL WS-NP-EOF
                    PERFORM PROCESS-RECORD
                    PERFORM READ-NEXT-RECORD
-           END-PERFORM.
+           END-PERFORM
+           .
       
       *****************************************************************
       * LECTURE D'UN ENREGISTREMENT                                  *
@@ -186,7 +220,8 @@
                          WS-NP-STATUS
                  ADD 1 TO WS-RECORDS-ERROR
               END-IF
-           END-IF.
+           END-IF
+           .
       
       *****************************************************************
       * TRAITEMENT D'UN ENREGISTREMENT                               *
@@ -200,7 +235,8 @@
            ELSE
               DISPLAY 'LIGNE IGNOREE (VIDE)'
               ADD 1 TO WS-RECORDS-ERROR
-           END-IF.
+           END-IF
+           .
       
       *****************************************************************
       * ANALYSE DE LA LIGNE CSV                                      *
@@ -217,25 +253,19 @@
            PERFORM EXTRACT-FIELD
            MOVE WS-EXTRACTED-FIELD TO WS-DESCRIPTION
       
-      * EXTRACTION DU PRIX
-      * TODO IMPLEMENTER LA CONVERTION
+      * EXTRACTION DU PRIX    
            PERFORM EXTRACT-FIELD
-      * remplacer virgule par point et supprimer espaces
-           INSPECT WS-EXTRACTED-FIELD REPLACING ALL ',' BY '.'
-           INSPECT WS-EXTRACTED-FIELD REPLACING ALL ' ' BY ''
+      * remplacer virgule par point
+           INSPECT WS-EXTRACTED-FIELD REPLACING ALL ',' BY '.'     
            DISPLAY 'PRICE EXTRACTED:' WS-EXTRACTED-FIELD
-      * Conversion en numerique securisee via NUMVAL
-           MOVE FUNCTION NUMVAL(WS-EXTRACTED-FIELD) TO WS-PRICE
-           DISPLAY 'PRICE APRES CONV:' WS-PRICE
+           COMPUTE WS-PRICE = FUNCTION NUMVAL(WS-EXTRACTED-FIELD)  
+           DISPLAY 'PRICE APRES CONV:' WS-PRICE           
       
       * EXTRACTION DE LA DEVISE
            PERFORM EXTRACT-FIELD
-           MOVE WS-EXTRACTED-FIELD TO WS-CURRENCY
-      
-      * Nettoyage simple de la description: compacter doubles espaces
-           INSPECT WS-DESCRIPTION REPLACING ALL '  ' BY ' '
-      
-           DISPLAY 'INFOS EXTRAITES :' WS-PRODUCT-DATA.
+           MOVE WS-EXTRACTED-FIELD TO WS-CURRENCY 
+           DISPLAY 'INFOS EXTRAITES :' WS-PRODUCT-DATA           
+           .
       
       * TODO A ESSAYER AVEC UN INSPECT
       *****************************************************************
@@ -261,7 +291,8 @@
            END-IF
       
       * POSITIONNEMENT POUR LE CHAMP SUIVANT
-           COMPUTE WS-FIELD-POINTER = WS-SEMICOLON-POS + 1.
+           COMPUTE WS-FIELD-POINTER = WS-SEMICOLON-POS + 1
+           .
       
       *****************************************************************
       * FORMATAGE DE LA DESCRIPTION                                  *
@@ -279,27 +310,28 @@
                          TO WS-FORMATTED-DESC(WS-CHAR-POS:1)
                    END-IF
                    ADD 1 TO WS-CHAR-POS
-           END-PERFORM.
+           END-PERFORM
+           .
       
       *****************************************************************
       * CONVERSION DE DEVISE                                         *
       *****************************************************************
-       CONVERT-CURRENCY.
-      
-           EVALUATE WS-CURRENCY
-           WHEN 'EU'
-                MOVE WS-EU-RATE TO WS-CONVERSION-RATE
-           WHEN 'YU'
-                MOVE WS-YU-RATE TO WS-CONVERSION-RATE
-           WHEN 'DO'
-                MOVE WS-DO-RATE TO WS-CONVERSION-RATE
-           WHEN OTHER
-                DISPLAY 'DEVISE INCONNUE: ' WS-CURRENCY
-                MOVE WS-DO-RATE TO WS-CONVERSION-RATE
-           END-EVALUATE
-      
+       CONVERT-CURRENCY.      
+           MOVE WS-DO-RATE TO WS-CONVERSION-RATE
+           MOVE 0 TO WS-RT-IDX
+           IF WS-RATE-COUNT > 0
+              PERFORM VARYING WS-RT-IDX FROM 1 BY 1
+                 UNTIL WS-RT-IDX > WS-RATE-COUNT
+                 OR WS-RT-CURR(WS-RT-IDX) = WS-CURRENCY                      
+              END-PERFORM
+              IF WS-RT-IDX <= WS-RATE-COUNT
+                 MOVE WS-RT-RATE(WS-RT-IDX) TO WS-CONVERSION-RATE                         
+              END-IF
+           END-IF           
+           DISPLAY 'CONVERSION RATE:' WS-CONVERSION-RATE
            COMPUTE WS-TEMP-PRICE = WS-PRICE * WS-CONVERSION-RATE
-           MOVE WS-TEMP-PRICE TO WS-CONVERTED-PRICE.
+           MOVE WS-TEMP-PRICE TO WS-CONVERTED-PRICE
+           .
       
       *****************************************************************
       * INSERTION EN BASE DE DONNEES                                 *
@@ -318,46 +350,26 @@
                (P_NO, DESCRIPTION, PRICE)
                VALUES
                (:H-PRODUCT-NO, :H-DESCRIPTION, :H-PRICE)
-           END-EXEC
-      * Gestion duplicat cle: tenter UPDATE si -803
+           END-EXEC     
            IF SQLCODE = 0
               ADD 1 TO WS-RECORDS-INSERTED
               ADD 1 TO WS-COMMIT-COUNT
               PERFORM WRITE-DETAIL-LINE
               DISPLAY 'PRODUIT INSERE: ' WS-PRODUCT-NO
            ELSE
-              IF SQLCODE = -803
-                   EXEC SQL
-                       UPDATE API7.PRODUCTS
-                          SET DESCRIPTION = :H-DESCRIPTION,
-                              PRICE = :H-PRICE
-                        WHERE P_NO = :H-PRODUCT-NO
-                   END-EXEC
-                 IF SQLCODE = 0
-                    ADD 1 TO WS-RECORDS-INSERTED
-                    ADD 1 TO WS-COMMIT-COUNT
-                    PERFORM WRITE-DETAIL-LINE
-                    DISPLAY 'PRODUIT MIS A JOUR: ' WS-PRODUCT-NO
-                 ELSE
-                    ADD 1 TO WS-RECORDS-ERROR
-                    DISPLAY 'ECHEC UPDATE PRODUIT: ' WS-PRODUCT-NO
-                    DISPLAY 'SQLCODE: ' SQLCODE
-                       EXEC SQL ROLLBACK END-EXEC
-                 END-IF
-              ELSE
-                 ADD 1 TO WS-RECORDS-ERROR
-                 DISPLAY 'ERREUR INSERTION PRODUIT: ' WS-PRODUCT-NO
-                 DISPLAY 'SQLCODE: ' SQLCODE
-                   EXEC SQL ROLLBACK END-EXEC
-              END-IF
+              ADD 1 TO WS-RECORDS-ERROR
+              PERFORM WRITE-DETAIL-LINE
+              DISPLAY 'ERREUR INSERTION PRODUIT: ' WS-PRODUCT-NO
+              DISPLAY 'SQLCODE: ' SQLCODE            
            END-IF
       
       * COMMIT periodique tous les 100 traitements
            IF WS-COMMIT-COUNT >= 100
                EXEC SQL COMMIT END-EXEC
-              MOVE ZERO TO WS-COMMIT-COUNT
+              MOVE 0 TO WS-COMMIT-COUNT
               DISPLAY 'COMMIT PERIODIQUE EFFECTUE'
-           END-IF.
+           END-IF
+           .
       
       *****************************************************************
       * ECRITURE LIGNE DE DETAIL                                     *
@@ -366,7 +378,8 @@
            MOVE WS-PRODUCT-NO TO WS-RPT-PRODUCT
            MOVE WS-FORMATTED-DESC TO WS-RPT-DESC
            MOVE WS-CONVERTED-PRICE TO WS-RPT-PRICE
-           WRITE REPORT-RECORD FROM WS-DETAIL-LINE.
+           WRITE REPORT-RECORD FROM WS-DETAIL-LINE
+           .
       
       *****************************************************************
       * FINALISATION                                                 *
@@ -379,8 +392,9 @@
            DISPLAY 'FIN DU PROGRAMME IMPPRODS'
            DISPLAY 'TOTAL ENREGISTREMENTS LUS: ' WS-RECORDS-READ
            DISPLAY 'TOTAL PRODUITS INSERES: ' WS-RECORDS-INSERTED
-           DISPLAY 'TOTAL ERREURS: ' WS-RECORDS-ERROR.
-      
+           DISPLAY 'TOTAL ERREURS: ' WS-RECORDS-ERROR
+           .
+
       *****************************************************************
       * ECRITURE DU RESUME                                           *
       *****************************************************************
@@ -392,7 +406,8 @@
            MOVE WS-RECORDS-READ TO WS-RPT-TOTAL
            MOVE WS-RECORDS-INSERTED TO WS-RPT-INSERTED
            MOVE WS-RECORDS-ERROR TO WS-RPT-ERRORS
-           WRITE REPORT-RECORD FROM WS-SUMMARY-LINE.
+           WRITE REPORT-RECORD FROM WS-SUMMARY-LINE
+           .
       
       *****************************************************************
       * CONSTRUCTION DE LA LIGNE TIMESTAMP                           *
@@ -412,11 +427,56 @@
                   ':'
                   FUNCTION CURRENT-DATE(13:2)
               DELIMITED BY SIZE
-              INTO WS-TIMESTAMP-LINE.
+              INTO WS-TIMESTAMP-LINE
+           END-STRING
+           .
+      
+      *****************************************************************
+      * CHARGEMENT DES TAUX DEPUIS SYSIN                               *
+      *****************************************************************
+       LOAD-RATES.
+      * Tente d'ouvrir SYSIN et de charger des lignes de type CC=9.9999
+           OPEN INPUT SYSIN-FILE
+           IF WS-SI-OK
+              MOVE 0 TO WS-RATE-COUNT
+              PERFORM UNTIL WS-SI-EOF
+                      PERFORM READ-NEXT-SYSIN
+              END-PERFORM
+              DISPLAY 'NB TAUX CHARGES: ' WS-RATE-COUNT
+           ELSE
+               DISPLAY 'SYSIN NON DISPONIBLE OU ERREUR OUVERTURE: '
+                       WS-SI-STATUS
+           END-IF
+           .
+
+       READ-NEXT-SYSIN.
+           READ SYSIN-FILE
+           AT END
+              MOVE '10' TO WS-SI-STATUS
+           NOT AT END
+               PERFORM PROCESS-SYSIN-LINE
+           END-READ
+           .
+
+       PROCESS-SYSIN-LINE.
+      * Forme attendue: 'EU=1.0850'            
+           MOVE SPACES TO WS-SI-LEFT WS-SI-RIGHT        
+           UNSTRING SYSIN-RECORD
+              DELIMITED BY '='
+              INTO WS-SI-LEFT
+                   WS-SI-RIGHT
+           END-UNSTRING
+      *  convertit le taux            
+           COMPUTE WS-SI-RATE-NUM = FUNCTION NUMVAL(WS-SI-RIGHT)           
+           ADD 1 TO WS-RATE-COUNT
+           MOVE WS-SI-LEFT TO WS-RT-CURR(WS-RATE-COUNT)
+           MOVE WS-SI-RATE-NUM TO WS-RT-RATE(WS-RATE-COUNT)
+           .
       
       *****************************************************************
       * FERMETURE DES FICHIERS                                       *
       *****************************************************************
        CLOSE-FILES.
            CLOSE NEWPRODS-FILE
-           CLOSE REPORT-FILE.
+           CLOSE REPORT-FILE
+           .
