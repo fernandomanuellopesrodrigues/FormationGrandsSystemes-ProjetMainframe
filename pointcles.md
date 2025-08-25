@@ -1,4 +1,4 @@
-Points clés à retenir :
+# Points clés à retenir :
 Priorités de développement suggérées :
 
 Commencer par la Partie 1 (import produits) - c'est la plus simple et elle alimente la base
@@ -24,6 +24,3 @@ etape 1.
 1- corriger les sql , avec ajout de l'api
 2- executer les sqls
 3- verifier j'ai bien les données dans la bdd
-
-
-
