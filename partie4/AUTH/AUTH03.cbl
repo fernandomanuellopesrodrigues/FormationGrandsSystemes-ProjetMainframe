@@ -21,6 +21,10 @@
           05 U-FNAME         PIC X(20).
       
        77 WS-CD-ERR          PIC 9(2)   VALUE 0.  
+      
+       COPY DFHBMSCA.
+       COPY DFHAID.
+       COPY MS03.
 
        LINKAGE SECTION.
        01 DFHCOMMAREA        PIC X(256).
@@ -31,9 +35,7 @@
           05 CA-LAST-MSG     PIC X(78).
           05 FILLER          PIC X(164).
 
-       COPY MS03.
-       COPY DFHBMSCA.
-       COPY DFHAID.
+     
 
       ******************************************************************
       *    SI EIBCALEN = 0 ==> PREMIERE FOIS
