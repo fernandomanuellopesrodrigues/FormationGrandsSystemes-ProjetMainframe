@@ -1,0 +1,95 @@
+MS03     DFHMSD TYPE=&SYSPARM,                                         X
+               MODE=INOUT,                                             X
+               LANG=COBOL,                                             X 
+               DSATTS=COLOR,                                           X
+               MAPATTS=COLOR,                                          X 
+               STORAGE=AUTO,                                           X 
+               TIOAPFX=YES,                                            X 
+               CTRL=FREEKB
+***********************************************************************
+*                    MAP de LOGIN                                     *
+***********************************************************************
+***********************************************************************
+MAP03L   DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+***********************************************************************
+         DFHMDF POS=(5,5),                                             X 
+               LENGTH=14,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='Login     :'
+L-LOGIN  DFHMDF POS=(5,20),                                            X 
+               LENGTH=8,                                               X 
+               ATTRB=(UNPROT,IC)                                        
+***********************************************************************
+         DFHMDF POS=(6,5),                                             X 
+               LENGTH=14,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='Password  :'
+L-PASSWD DFHMDF POS=(6,20),                                            X 
+               LENGTH=8,                                               X 
+               ATTRB=(UNPROT,IC)
+***********************************************************************               
+         DFHMDF POS=(8,5),                                             X 
+               LENGTH=40,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='ENTER=Valider  PF3=Quitter  CLEAR=Effacer'
+***********************************************************************
+L-MSG    DFHMDF POS=(23,2),                                            X 
+               LENGTH=78,                                              X 
+               ATTRB=(PROT,ASKIP)
+***********************************************************************
+*                 MAP AJOUT DES PIECES                                *  
+***********************************************************************
+MAP03P   DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+***********************************************************************
+         DFHMDF POS=(4,5),                                             X  
+               LENGTH=21,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X
+               INITIAL='Numero de la piece  :'
+I-PARTNO DFHMDF POS=(4,27),                                            X 
+               LENGTH=3,                                               X 
+               ATTRB=(UNPROT,IC)
+***********************************************************************
+         DFHMDF POS=(5,5),                                             X 
+               LENGTH=21,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='Nom de la piece     :'             
+I-NAME   DFHMDF POS=(5,27),                                            X 
+               LENGTH=20,                                              X 
+               ATTRB=(UNPROT,IC)
+***********************************************************************         
+         DFHMDF POS=(6,5),                                             X 
+               LENGTH=21,                                              X 
+               ATTRB=(PROT,ASKIP),                                     x 
+               INITIAL='Couleur de la piece :'
+I-COLOR  DFHMDF POS=(6,27),                                            X 
+               LENGTH=10,                                              X 
+               ATTRB=(UNPROT,IC)
+***********************************************************************
+         DFHMDF POS=(7,5),                                             X 
+               LENGTH=21,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='Poids de la piece   :'
+I-WEIGHT DFHMDF POS=(7,27),                                            X 
+               LENGTH=3,                                               X 
+               ATTRB=(UNPROT,IC)
+***********************************************************************
+         DFHMDF POS=(8,5),                                             X 
+               LENGTH=21,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='Ville de provenance :'
+I-CITY   DFHMDF POS=(8,27),                                            X 
+               LENGTH=15,                                              X 
+               ATTRB=(UNPROT,IC)
+***********************************************************************
+         DFHMDF POS=(10,5),                                            X 
+               LENGTH=55,                                              X 
+               ATTRB=(PROT,ASKIP),                                     X 
+               INITIAL='ENTER=Save  PF5=Clear  PF3=Exit  CLEAR=Clear a X
+               ll'
+***********************************************************************
+I-MSG    DFHMDF POS=(23,2),                                            X 
+               LENGTH=78,                                              X 
+               ATTRB=(PROT,ASKIP)
+***********************************************************************
+         DFHMSD TYPE=FINAL
+         END

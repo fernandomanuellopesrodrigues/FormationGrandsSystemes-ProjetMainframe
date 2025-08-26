@@ -194,7 +194,7 @@ Créer une IHM sécurisée pour ajouter des pièces dans `PROJET.NEWPARTS.KSDS`.
 
 #### 2. Ressources CICS
 - **Transaction** : TXXX (où X = nom du groupe)
-- **Mapset** : MSXX 
+- **Mapset** : MSXX
 - **Map** : MAPXX
 
 #### 3. Programmes CICS
