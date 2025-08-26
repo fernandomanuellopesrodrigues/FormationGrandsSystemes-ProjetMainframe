@@ -10,7 +10,7 @@
        01 WS-MAPSET-NAME     PIC X(4)   VALUE 'MS03'.
        01 WS-MAP-LOGIN       PIC X(6)   VALUE 'MAP03L'.
        01 WS-PGM-PARTS       PIC X(8)   VALUE 'PARTS03'.
-       01 WS-PGM-USERSX      PIC X(24)  VALUE 'USERSX'.
+       01 WS-PGM-USERSX      PIC X(24)  VALUE 'USERS03'.
        01 WS-TRANS-NAME      PIC X(5)   VALUE 'T03L'.
 
        01 USERSX-REC.
