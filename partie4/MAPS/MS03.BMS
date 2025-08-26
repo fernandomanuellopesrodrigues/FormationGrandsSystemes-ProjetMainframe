@@ -13,29 +13,29 @@ MS03     DFHMSD TYPE=&SYSPARM,                                         X
 MAP03L   DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
 ***********************************************************************
          DFHMDF POS=(5,5),                                             X 
-               LENGTH=14,                                              X 
+               LENGTH=11,                                              X 
                ATTRB=(PROT,ASKIP),                                     X 
                INITIAL='Login     :'
-L-LOGIN  DFHMDF POS=(5,20),                                            X 
+L-LOGIN  DFHMDF POS=(5,17),                                            X 
                LENGTH=8,                                               X 
                ATTRB=(UNPROT,IC)                                        
 ***********************************************************************
          DFHMDF POS=(6,5),                                             X 
-               LENGTH=14,                                              X 
+               LENGTH=11,                                              X 
                ATTRB=(PROT,ASKIP),                                     X 
                INITIAL='Password  :'
-L-PASSWD DFHMDF POS=(6,20),                                            X 
+L-PASSWD DFHMDF POS=(6,17),                                            X 
                LENGTH=8,                                               X 
-               ATTRB=(UNPROT,IC)
+               ATTRB=(UNPROT)
 ***********************************************************************               
          DFHMDF POS=(8,5),                                             X 
-               LENGTH=40,                                              X 
+               LENGTH=41,                                              X 
                ATTRB=(PROT,ASKIP),                                     X 
                INITIAL='ENTER=Valider  PF3=Quitter  CLEAR=Effacer'
 ***********************************************************************
 L-MSG    DFHMDF POS=(23,2),                                            X 
                LENGTH=78,                                              X 
-               ATTRB=(PROT,ASKIP)
+               ATTRB=(PROT,ASKIP,BRT)
 ***********************************************************************
 *                 MAP AJOUT DES PIECES                                *  
 ***********************************************************************
@@ -55,7 +55,7 @@ I-PARTNO DFHMDF POS=(4,27),                                            X
                INITIAL='Nom de la piece     :'             
 I-NAME   DFHMDF POS=(5,27),                                            X 
                LENGTH=20,                                              X 
-               ATTRB=(UNPROT,IC)
+               ATTRB=(UNPROT)
 ***********************************************************************         
          DFHMDF POS=(6,5),                                             X 
                LENGTH=21,                                              X 
@@ -63,7 +63,7 @@ I-NAME   DFHMDF POS=(5,27),                                            X
                INITIAL='Couleur de la piece :'
 I-COLOR  DFHMDF POS=(6,27),                                            X 
                LENGTH=10,                                              X 
-               ATTRB=(UNPROT,IC)
+               ATTRB=(UNPROT)
 ***********************************************************************
          DFHMDF POS=(7,5),                                             X 
                LENGTH=21,                                              X 
@@ -71,7 +71,7 @@ I-COLOR  DFHMDF POS=(6,27),                                            X
                INITIAL='Poids de la piece   :'
 I-WEIGHT DFHMDF POS=(7,27),                                            X 
                LENGTH=3,                                               X 
-               ATTRB=(UNPROT,IC)
+               ATTRB=(UNPROT)
 ***********************************************************************
          DFHMDF POS=(8,5),                                             X 
                LENGTH=21,                                              X 
@@ -79,7 +79,7 @@ I-WEIGHT DFHMDF POS=(7,27),                                            X
                INITIAL='Ville de provenance :'
 I-CITY   DFHMDF POS=(8,27),                                            X 
                LENGTH=15,                                              X 
-               ATTRB=(UNPROT,IC)
+               ATTRB=(UNPROT)
 ***********************************************************************
          DFHMDF POS=(10,5),                                            X 
                LENGTH=55,                                              X 
@@ -89,7 +89,7 @@ I-CITY   DFHMDF POS=(8,27),                                            X
 ***********************************************************************
 I-MSG    DFHMDF POS=(23,2),                                            X 
                LENGTH=78,                                              X 
-               ATTRB=(PROT,ASKIP)
+               ATTRB=(PROT,ASKIP,BRT)
 ***********************************************************************
          DFHMSD TYPE=FINAL
          END
