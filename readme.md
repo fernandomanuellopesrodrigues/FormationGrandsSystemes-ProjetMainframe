@@ -184,18 +184,18 @@ PROGRAM-ID. GENERATE-INVOICES.
 ## PARTIE 4 : Interface CICS pour saisie de pièces
 
 ### Objectif
-Créer une IHM sécurisée pour ajouter des pièces dans `PROJET.NEWPARTS.KSDS`.
+Créer une IHM sécurisée pour ajouter des pièces dans `API7.PROJET.PARTS03.KSDS`.
 
 ### Architecture CICS
 
 #### 1. Fichiers VSAM
-- **PARTSX** : Fichier des nouvelles pièces (PROJET.NEWPARTS.KSDS)
-- **USERSX** : Fichier des employés (AJC.EMPLOYE.KSDS)
+- **PARTSX** : Fichier des nouvelles pièces (API7.PROJET.PARTS03.KSDS)
+- **USERSX** : Fichier des employés (API7.PROJET.USERS03.KSDS)
 
 #### 2. Ressources CICS
-- **Transaction** : TXXX (où X = nom du groupe)
-- **Mapset** : MSXX
-- **Map** : MAPXX
+- **TransactionS** : T03L T03P
+- **Mapset** : MS03
+- **MapS** : MAP03L MAP03P
 
 #### 3. Programmes CICS
 
