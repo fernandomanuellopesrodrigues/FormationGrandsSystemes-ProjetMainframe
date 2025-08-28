@@ -24,8 +24,21 @@ Exemple : P10;USB FLASH DRIVE;15;EU
 #### 1. Programme de lecture et traitement
 ```cobol
 IDENTIFICATION DIVISION.
-PROGRAM-ID. IMPORT-PRODUCTS.
+PROGRAM-ID. NEWPRODS.
 
+********************************************************
+ENVIRONMENT DIVISION.
+CONFIGURATION SECTION.
+SPECIAL-NAMES.
+    DECIMAL-POINT IS COMMA.
+
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT NEWPRODS ASSIGN FNEWPRODS
+    ORGANIZATION IS SEQUENTIAL
+    FILE STATUS IS FS-NEWPRODS
+
+********************************************************
 DATA DIVISION.
 WORKING-STORAGE SECTION.
 01 WS-PRODUCT-RECORD.
@@ -38,9 +51,24 @@ WORKING-STORAGE SECTION.
    05 WS-CURRENCY        PIC XX.
 
 01 WS-CONVERSION-RATES.
-   05 WS-EU-RATE         PIC 9V9999 VALUE 1.0850.  * Euro vers Dollar
-   05 WS-YU-RATE         PIC 9V9999 VALUE 0.1450.  * Yuan vers Dollar
-   05 WS-DO-RATE         PIC 9V9999 VALUE 1.0000.  * Dollar (référence)
+   05 WS-EU-RATE   PIC 9V9999 VALUE 1.0850.  * Euro vers Dollar
+   05 WS-YU-RATE   PIC 9V9999 VALUE 0.1450.  * Yuan vers Dollar
+   05 WS-DO-RATE   PIC 9V9999 VALUE 1.0000.  * Dollar (référence)
+
+********************************************************
+
+PROCEDURE DIVISION.
+
+DEBUT-PGM.
+
+     PERFORM OUVRIR-FICHIERS
+
+     PERFORM LIRE-FICHIER-PRODUITS
+     PERFORM FERMER-FICHIERS
+
+     STOP RUN.
+
+********************************************************
 ```
 
 #### 2. Logique de conversion des devises
