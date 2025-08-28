@@ -1,0 +1,12 @@
+## API7.PROJET.USERS03.KSDS
+
+CEDA DEF FILE(USERS03) GROUP(API7) +
+     DSNAME(API7.PROJET.USERS03.KSDS)
+     
+CEDA INS FILE(USERS03) GROUP(API7)
+
+### pour verifier
+CEMT I FILE (USERS03)
+### note pour supprimer un fichier il faut qu'il soit closed et disabled
+CEMT SET FILE(USERS03) CLOSED
+CEMT SET FILE(USERS03) DISABLED03

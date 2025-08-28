@@ -5,13 +5,13 @@
            02  FILLER REDEFINES L-LOGINF.
              03 L-LOGINA    PICTURE X.
            02  FILLER   PICTURE X(1).
-           02  L-LOGINI  PIC X(8).
+           02  L-LOGINI  PIC X(5).
            02  L-PASSWDL    COMP  PIC  S9(4).
            02  L-PASSWDF    PICTURE X.
            02  FILLER REDEFINES L-PASSWDF.
              03 L-PASSWDA    PICTURE X.
            02  FILLER   PICTURE X(1).
-           02  L-PASSWDI  PIC X(8).
+           02  L-PASSWDI  PIC X(15).
            02  L-MSGL    COMP  PIC  S9(4).
            02  L-MSGF    PICTURE X.
            02  FILLER REDEFINES L-MSGF.
@@ -22,10 +22,10 @@
            02  FILLER PIC X(12).
            02  FILLER PICTURE X(3).
            02  L-LOGINC    PICTURE X.
-           02  L-LOGINO  PIC X(8).
+           02  L-LOGINO  PIC X(5).
            02  FILLER PICTURE X(3).
            02  L-PASSWDC    PICTURE X.
-           02  L-PASSWDO  PIC X(8).
+           02  L-PASSWDO  PIC X(15).
            02  FILLER PICTURE X(3).
            02  L-MSGC    PICTURE X.
            02  L-MSGO  PIC X(78).

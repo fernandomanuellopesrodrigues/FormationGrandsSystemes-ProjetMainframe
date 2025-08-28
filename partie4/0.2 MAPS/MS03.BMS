@@ -17,7 +17,7 @@ MAP03L   DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
                ATTRB=(PROT,ASKIP),                                     X 
                INITIAL='Login     :'
 L-LOGIN  DFHMDF POS=(5,17),                                            X 
-               LENGTH=8,                                               X 
+               LENGTH=5,                                               X 
                ATTRB=(UNPROT,IC)                                        
 ***********************************************************************
          DFHMDF POS=(6,5),                                             X 
@@ -25,7 +25,7 @@ L-LOGIN  DFHMDF POS=(5,17),                                            X
                ATTRB=(PROT,ASKIP),                                     X 
                INITIAL='Password  :'
 L-PASSWD DFHMDF POS=(6,17),                                            X 
-               LENGTH=8,                                               X 
+               LENGTH=15,                                              X 
                ATTRB=(UNPROT)
 ***********************************************************************               
          DFHMDF POS=(8,5),                                             X 
