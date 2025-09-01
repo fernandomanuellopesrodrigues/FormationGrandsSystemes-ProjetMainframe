@@ -16,8 +16,7 @@
 
        DATA DIVISION.
        FILE SECTION.
-       FD  VENTESEU-FILE
-           RECORD CONTAINS 35 CHARACTERS.      
+       FD  VENTESEU-FILE.                
        01 EU-REC.
           05 EU-O-NO      PIC 9(3).                 
           05 EU-O-DATE    PIC X(10).                 
@@ -28,8 +27,7 @@
           05 EU-QUANTITY  PIC 9(2).                  
           05 EU-RES       PIC X(6).                  
 
-       FD  VENTESAS-FILE
-           RECORD CONTAINS 35 CHARACTERS.      
+       FD  VENTESAS-FILE.            
        01 AS-REC.
           05 AS-O-NO      PIC 9(3).
           05 AS-O-DATE    PIC X(10).
