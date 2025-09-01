@@ -1,12 +1,17 @@
        IDENTIFICATION DIVISION.
        PROGRAM-ID. AUTH03.
+
        ENVIRONMENT DIVISION.
        CONFIGURATION SECTION.
        SPECIAL-NAMES.
-           DECIMAL-POINT IS COMMA.           
+           DECIMAL-POINT IS COMMA.   
+
        DATA DIVISION.
-       WORKING-STORAGE SECTION. 
-        
+       WORKING-STORAGE SECTION.
+            COPY DFHAID.
+            COPY DFHBMSCA.
+            COPY MS03.
+
        01 USERSX-REC.
           05 U-LOGIN         PIC X(5).
           05 U-PASSWORD      PIC X(15).
@@ -16,11 +21,8 @@
           05 U-SALAIRE       PIC 9(5)V99.
           05 U-FILLER        PIC XXX.
       
-       77 WS-CD-ERR          PIC 9(2)    VALUE 0.  
-   
-       COPY DFHAID.
-       COPY MS03.
-
+       77 WS-CD-ERR          PIC 9(2).   
+  
        LINKAGE SECTION.
        01 ZONE.     
           05 CA-USER-LOGGED  PIC X(1).
@@ -39,11 +41,11 @@
                  MOVE SPACES TO CA-LOGIN CA-LAST-MSG
                  PERFORM SEND-LOGIN             
               END-IF  
-              PERFORM HANDLE-TOUCHE
-              PERFORM SEND-LOGIN        
+              PERFORM HANDLE-TOUCHE                 
            WHEN OTHER
               CONTINUE
-           END-EVALUATE           
+           END-EVALUATE 
+           PERFORM SEND-LOGIN             
            .
       ******************************************************************
       * AFFICHE L'ECRAN DE LOGIN

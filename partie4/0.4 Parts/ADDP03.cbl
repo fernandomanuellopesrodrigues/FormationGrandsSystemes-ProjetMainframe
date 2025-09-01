@@ -17,6 +17,7 @@
        77 WS-CD-ERR          PIC 9(2)  VALUE 0.         
       
        COPY DFHAID.  
+       COPY DFHBMSCA.
        COPY MS03.       
        
        LINKAGE SECTION.
