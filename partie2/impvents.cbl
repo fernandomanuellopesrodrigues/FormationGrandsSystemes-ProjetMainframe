@@ -23,7 +23,7 @@
           05 EU-S-NO      PIC 9(2).                 
           05 EU-C-NO      PIC 9(4).                  
           05 EU-P-NO      PIC X(3).                  
-          05 EU-PRICE5    PIC 9(5).                   
+          05 EU-PRICE5    PIC S9(3)V9(2) USAGE COMP-3.                   
           05 EU-QUANTITY  PIC 9(2).                  
           05 EU-RES       PIC X(6).                  
 
@@ -34,7 +34,7 @@
           05 AS-S-NO      PIC 9(2).
           05 AS-C-NO      PIC 9(4).
           05 AS-P-NO      PIC X(3).
-          05 AS-PRICE5    PIC 9(5).
+          05 AS-PRICE5    PIC S9(3)V9(2) USAGE COMP-3.  
           05 AS-QUANTITY  PIC 9(2).
           05 AS-RES       PIC X(6).
 
@@ -54,7 +54,7 @@
        01 W-JJ            PIC X(2).
        01 W-MM            PIC X(2).
        01 W-AAAA          PIC X(4).
-       01 WS-PRICE5       PIC 9(5).
+       01 WS-PRICE5       PIC S9(3)V9(2) USAGE COMP-3.
 
        PROCEDURE DIVISION.
       *===============================================================
@@ -106,7 +106,7 @@
            MOVE EU-P-NO TO ITM-P-NO
            MOVE EU-QUANTITY TO ITM-QUANTITY
            MOVE EU-PRICE5 TO WS-PRICE5
-           PERFORM MAKE-PRICE.
+           .         
 
        MAP-AS-TO-DCL.
       * ORDERS
@@ -119,13 +119,7 @@
            MOVE AS-P-NO TO ITM-P-NO
            MOVE AS-QUANTITY TO ITM-QUANTITY
            MOVE AS-PRICE5 TO WS-PRICE5
-           PERFORM MAKE-PRICE.
-
-      *===============================================================
-      * PRIX XXXXX -> XXX.XX  (PRICE OF ITEMS)
-      *===============================================================
-       MAKE-PRICE.
-           COMPUTE ITM-PRICE = FUNCTION NUMVAL(WS-PRICE5) / 100.
+           . 
 
       *===============================================================
       * DATE JJ/MM/AAAA -> YYYY-MM-DD  (dans W-DATE-IN)
