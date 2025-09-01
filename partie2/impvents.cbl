@@ -20,14 +20,14 @@
            RECORD CONTAINS 35 CHARACTERS.
        01 EU-REC          PIC X(35).
        01 EU-R REDEFINES EU-REC.
-          05 EU-O-NO      PIC 9(3).                  *> 1-3
-          05 EU-O-DATE    PIC X(10).                 *> 4-13 JJ/MM/AAAA
-          05 EU-S-NO      PIC 9(2).                  *> 14-15
-          05 EU-C-NO      PIC 9(4).                  *> 16-19
-          05 EU-P-NO      PIC X(3).                  *> 20-22
-          05 EU-PRICE5    PIC 9(5).                  *> 
-          05 EU-QUANTITY  PIC 9(2).                  *> 28-29
-          05 EU-RES       PIC X(6).                  *> 30-35
+          05 EU-O-NO      PIC 9(3).                 
+          05 EU-O-DATE    PIC X(10).                 
+          05 EU-S-NO      PIC 9(2).                 
+          05 EU-C-NO      PIC 9(4).                  
+          05 EU-P-NO      PIC X(3).                  
+          05 EU-PRICE5    PIC 9(5).                   
+          05 EU-QUANTITY  PIC 9(2).                  
+          05 EU-RES       PIC X(6).                  
 
        FD  VENTESAS-FILE
            RECORD CONTAINS 35 CHARACTERS.
@@ -180,7 +180,7 @@
 
       * UPDATE CUSTOMS : BALANCE += (PRICE * QUANTITY)
            EXEC SQL
-              UPDATE API9.CUSTOMS
+              UPDATE API9.CUSTOMERS
                  SET BALANCE = BALANCE
                              +(:ITM-PRICE
                                 * :ITM-QUANTITY)
