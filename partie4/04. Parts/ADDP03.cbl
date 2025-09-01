@@ -30,16 +30,17 @@
        MAIN.
            IF EIBCALEN = ZERO OR CA-USER-LOGGED NOT = 'Y'
               EXEC CICS XCTL 
-				       PROGRAM('AUTH03')
+			    PROGRAM('AUTH03')
                    COMMAREA(ZONE)
                    LENGTH(LENGTH OF ZONE)
+                   RESP(WS-CD-ERR) 
                END-EXEC
-           END-IF
-      
+           END-IF      
           
-          IF  RESPONSE NOT = DFHRESP(NORMAL)
-              PERFORM ERROR-PARA
-          END-IF.
+           IF  WS-CD-ERR NOT = DFHRESP(NORMAL)
+               MOVE 'ERREUR XCTL AUTH03' TO CA-LAST-MSG
+               PERFORM END-ALL
+           END-IF.
 
            IF EIBAID = DFHNULL
               MOVE 'SAISISSEZ UNE PIECE PUIS ENTER' TO CA-LAST-MSG
@@ -54,8 +55,7 @@
       * AFFICHE L'ECRAN DE AJOUT DES PIECES
       ******************************************************************
        SEND-FORM.
-           MOVE CA-LAST-MSG TO I-MSGO
-           
+           MOVE CA-LAST-MSG TO I-MSGO     
                
            EXEC CICS SEND
                 MAP('MAP03P')
@@ -101,7 +101,7 @@
            END-IF
 
            IF P-WEIGHT NOT NUMERIC
-              MOVE 'LE POIDS DOIT ETRE NUMERIQUE' TO CA-LAST-MSG                         
+              MOVE 'LE POIDS DOIT ETRE NUMERIQUE' TO CA-LAST-MSG       
               EXIT PARAGRAPH
            END-IF
 
@@ -148,11 +148,11 @@
               PERFORM END-ALL              
            END-IF
            
-			  MOVE I-PARTNOI TO P-PART-NO         
-           MOVE I-NAMEI TO P-PART-NAME
-           MOVE I-COLORI TO P-COLOR
-           MOVE I-WEIGHTI TO P-WEIGHT
-           MOVE I-CITYI TO P-CITY
+	      MOVE I-PARTNOI TO P-PART-NO         
+	      MOVE I-NAMEI TO P-PART-NAME
+	      MOVE I-COLORI TO P-COLOR
+	      MOVE I-WEIGHTI TO P-WEIGHT
+	      MOVE I-CITYI TO P-CITY
            .
          
       ******************************************************************
