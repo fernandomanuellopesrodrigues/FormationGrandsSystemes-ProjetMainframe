@@ -31,8 +31,8 @@
 
        FD  VENTESAS-FILE
            RECORD CONTAINS 35 CHARACTERS.
-       01 AS-REC          PIC X(35).
-       01 AS-R REDEFINES AS-REC.
+       
+       01 AS-R.
           05 AS-O-NO      PIC 9(3).
           05 AS-O-DATE    PIC X(10).
           05 AS-S-NO      PIC 9(2).
