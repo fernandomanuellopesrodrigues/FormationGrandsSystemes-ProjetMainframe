@@ -1,2 +1,7 @@
 zapp.yaml
 .vscode/
+cspell.config.yaml
+.cspell/custom-dictionary-workspace.txt
+enonce/SOURCES/REPROTEST03.jcl
+enonce/SOURCES/RUNONLINE03.jcl
+partie4/0.4 Parts/ceda-grp03.txt

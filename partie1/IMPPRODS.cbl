@@ -137,10 +137,18 @@
       
       * VARIABLES DB2
            EXEC SQL INCLUDE SQLCA END-EXEC.
+           EXEC SQL DECLARE API7.PRODUCTS TABLE
+           (
+            P_NO         CHAR(3),
+            DESCRIPTION  VARCHAR(30),
+            PRICE        DEC(5,2)
+           )
+           END-EXEC.
+
       * VARIABLES HOTES DB2 (SANS DECLARE SECTION)
        01 H-PRODUCT-NO            PIC X(3).
        01 H-DESCRIPTION           PIC X(30).
-       01 H-PRICE                 PIC S9(2)V9(2) USAGE COMP-3
+       01 H-PRICE                 PIC S9(3)V9(2) USAGE COMP-3
                                                  VALUE +0.
       
        PROCEDURE DIVISION.
@@ -325,7 +333,7 @@
                  OR WS-RT-CURR(WS-RT-IDX) = WS-CURRENCY                      
               END-PERFORM
               IF WS-RT-IDX <= WS-RATE-COUNT
-                 MOVE WS-RT-RATE(WS-RT-IDX) TO WS-CONVERSION-RATE                         
+                 MOVE WS-RT-RATE(WS-RT-IDX) TO WS-CONVERSION-RATE               
               END-IF
            END-IF           
            DISPLAY 'CONVERSION RATE:' WS-CONVERSION-RATE
@@ -351,7 +359,7 @@
                VALUES
                (:H-PRODUCT-NO, :H-DESCRIPTION, :H-PRICE)
            END-EXEC     
-           IF SQLCODE = 0
+           IF SQLCODE = ZERO
               ADD 1 TO WS-RECORDS-INSERTED
               ADD 1 TO WS-COMMIT-COUNT
               PERFORM WRITE-DETAIL-LINE

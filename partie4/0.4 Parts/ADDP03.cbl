@@ -30,17 +30,17 @@
        MAIN.
            IF EIBCALEN = ZERO OR CA-USER-LOGGED NOT = 'Y'
               EXEC CICS XCTL 
-			    PROGRAM('AUTH03')
-                   COMMAREA(ZONE)
-                   LENGTH(LENGTH OF ZONE)
-                   RESP(WS-CD-ERR) 
-               END-EXEC
+	             PROGRAM('AUTH03')
+	             COMMAREA(ZONE)
+	             LENGTH(LENGTH OF ZONE)
+	             RESP(WS-CD-ERR) 
+              END-EXEC
            END-IF      
           
            IF  WS-CD-ERR NOT = DFHRESP(NORMAL)
                MOVE 'ERREUR XCTL AUTH03' TO CA-LAST-MSG
                PERFORM END-ALL
-           END-IF.
+           END-IF
 
            IF EIBAID = DFHNULL
               MOVE 'SAISISSEZ UNE PIECE PUIS ENTER' TO CA-LAST-MSG
@@ -49,7 +49,8 @@
            END-IF
 
            PERFORM HANDLE-TOUCHE
-           PERFORM SEND-FORM			 
+           PERFORM SEND-FORM
+           GOBACK
            .
       ******************************************************************
       * AFFICHE L'ECRAN DE AJOUT DES PIECES
@@ -97,31 +98,31 @@
            IF P-PART-NO = SPACES OR P-PART-NAME = SPACES
               MOVE 'NUMERO ET NOM DE LA PIECE SONT OBLIGATOIRES'
                  TO CA-LAST-MSG           
-              EXIT PARAGRAPH          
+              EXIT          
            END-IF
 
            IF P-WEIGHT NOT NUMERIC
               MOVE 'LE POIDS DOIT ETRE NUMERIQUE' TO CA-LAST-MSG       
-              EXIT PARAGRAPH
+              EXIT
            END-IF
 
            EXEC CICS READ
-                FILE('PARTS03')
-                INTO (PARTSX-REC)
-                RIDFLD(P-PART-NO)
-                RESP(WS-CD-ERR) 
+              FILE('PARTS03')
+              INTO (PARTSX-REC)
+              RIDFLD(P-PART-NO)
+              RESP(WS-CD-ERR) 
            END-EXEC.
 
            IF WS-CD-ERR = DFHRESP(NORMAL)
               MOVE 'LA PIECE EXISTE DEJA' TO CA-LAST-MSG
-              EXIT PARAGRAPH           
+              EXIT           
            END-IF.
        
            EXEC CICS WRITE 
-			       FILE('PARTS03')
-                FROM (PARTSX-REC)
-                RIDFLD(P-PART-NO)
-                RESP(WS-CD-ERR)
+              FILE('PARTS03')
+              FROM (PARTSX-REC)
+              RIDFLD(P-PART-NO)
+              RESP(WS-CD-ERR)
            END-EXEC.
 
 
@@ -137,10 +138,10 @@
       *       on recupere les donnees depuis l'ecran de login
        RECEIVE-PART.
            EXEC CICS RECEIVE 
-			       MAP('MAP03P')
-                MAPSET('MS03')
-                INTO (MAP03PI)
-                RESP(WS-CD-ERR)
+              MAP('MAP03P')
+              MAPSET('MS03')
+              INTO (MAP03PI)
+              RESP(WS-CD-ERR)
            END-EXEC
 
            IF WS-CD-ERR NOT = DFHRESP(NORMAL)
@@ -148,11 +149,11 @@
               PERFORM END-ALL              
            END-IF
            
-	      MOVE I-PARTNOI TO P-PART-NO         
-	      MOVE I-NAMEI TO P-PART-NAME
-	      MOVE I-COLORI TO P-COLOR
-	      MOVE I-WEIGHTI TO P-WEIGHT
-	      MOVE I-CITYI TO P-CITY
+           MOVE I-PARTNOI TO P-PART-NO         
+           MOVE I-NAMEI TO P-PART-NAME
+           MOVE I-COLORI TO P-COLOR
+           MOVE I-WEIGHTI TO P-WEIGHT
+           MOVE I-CITYI TO P-CITY
            .
          
       ******************************************************************
@@ -168,10 +169,10 @@
       ******************************************************************
        END-ALL.
            EXEC CICS SEND 
-			       FROM (CA-LAST-MSG)
-                LENGTH(LENGTH OF CA-LAST-MSG)
-                WAIT
-                ERASE
+		         FROM (CA-LAST-MSG)
+		         LENGTH(LENGTH OF CA-LAST-MSG)
+		         WAIT
+		         ERASE
            END-EXEC
            EXEC CICS RETURN 
            END-EXEC
