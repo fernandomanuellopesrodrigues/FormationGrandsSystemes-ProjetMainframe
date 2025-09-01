@@ -53,8 +53,7 @@
        01 W-DATE-IN       PIC X(10).
        01 W-JJ            PIC X(2).
        01 W-MM            PIC X(2).
-       01 W-AAAA          PIC X(4).
-       01 WS-PRICE5       PIC S9(3)V9(2) USAGE COMP-3.
+       01 W-AAAA          PIC X(4).  
 
        PROCEDURE DIVISION.
       *===============================================================
@@ -105,7 +104,7 @@
            MOVE ORD-O-NO TO ITM-O-NO
            MOVE EU-P-NO TO ITM-P-NO
            MOVE EU-QUANTITY TO ITM-QUANTITY
-           MOVE EU-PRICE5 TO WS-PRICE5
+           MOVE EU-PRICE5 TO ITM-PRICE
            .         
 
        MAP-AS-TO-DCL.
@@ -118,7 +117,7 @@
            MOVE ORD-O-NO TO ITM-O-NO
            MOVE AS-P-NO TO ITM-P-NO
            MOVE AS-QUANTITY TO ITM-QUANTITY
-           MOVE AS-PRICE5 TO WS-PRICE5
+           MOVE AS-PRICE5 TO ITM-PRICE
            . 
 
       *===============================================================
