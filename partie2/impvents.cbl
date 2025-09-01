@@ -18,29 +18,29 @@
        FILE SECTION.
        FD  VENTESEU-FILE
            RECORD CONTAINS 35 CHARACTERS.
-       01  EU-REC                      PIC X(35).
-       01  EU-R REDEFINES EU-REC.
-           05 EU-O-NO                  PIC 9(3).     *> 1-3
-           05 EU-O-DATE                PIC X(10).    *> 4-13 JJ/MM/AAAA
-           05 EU-S-NO                  PIC 9(2).     *> 14-15
-           05 EU-C-NO                  PIC 9(4).     *> 16-19
-           05 EU-P-NO                  PIC X(3).     *> 20-22
-           05 EU-PRICE5                PIC 9(5).     *> 
-           05 EU-QUANTITY              PIC 9(2).     *> 28-29
-           05 EU-RES                   PIC X(6).     *> 30-35
+       01 EU-REC          PIC X(35).
+       01 EU-R REDEFINES EU-REC.
+          05 EU-O-NO      PIC 9(3).                  *> 1-3
+          05 EU-O-DATE    PIC X(10).                 *> 4-13 JJ/MM/AAAA
+          05 EU-S-NO      PIC 9(2).                  *> 14-15
+          05 EU-C-NO      PIC 9(4).                  *> 16-19
+          05 EU-P-NO      PIC X(3).                  *> 20-22
+          05 EU-PRICE5    PIC 9(5).                  *> 
+          05 EU-QUANTITY  PIC 9(2).                  *> 28-29
+          05 EU-RES       PIC X(6).                  *> 30-35
 
        FD  VENTESAS-FILE
            RECORD CONTAINS 35 CHARACTERS.
-       01  AS-REC                      PIC X(35).
-       01  AS-R REDEFINES AS-REC.
-           05 AS-O-NO                  PIC 9(3).
-           05 AS-O-DATE                PIC X(10).
-           05 AS-S-NO                  PIC 9(2).
-           05 AS-C-NO                  PIC 9(4).
-           05 AS-P-NO                  PIC X(3).
-           05 AS-PRICE5                PIC 9(5).
-           05 AS-QUANTITY              PIC 9(2).
-           05 AS-RES                   PIC X(6).
+       01 AS-REC          PIC X(35).
+       01 AS-R REDEFINES AS-REC.
+          05 AS-O-NO      PIC 9(3).
+          05 AS-O-DATE    PIC X(10).
+          05 AS-S-NO      PIC 9(2).
+          05 AS-C-NO      PIC 9(4).
+          05 AS-P-NO      PIC X(3).
+          05 AS-PRICE5    PIC 9(5).
+          05 AS-QUANTITY  PIC 9(2).
+          05 AS-RES       PIC X(6).
 
        WORKING-STORAGE SECTION.
       * DB2
@@ -50,15 +50,15 @@
            EXEC SQL INCLUDE CUSTOMS END-EXEC.
 
       * Flags EOF
-       77  WS-EOF-EU                  PIC X VALUE 'N'.
-       77  WS-EOF-AS                  PIC X VALUE 'N'.
+       77 WS-EOF-EU       PIC X     VALUE 'N'.
+       77 WS-EOF-AS       PIC X     VALUE 'N'.
 
       * Conversions
-       01  W-DATE-IN                  PIC X(10).
-       01  W-JJ                       PIC X(2).
-       01  W-MM                       PIC X(2).
-       01  W-AAAA                     PIC X(4).
-       01  WS-PRICE5                  PIC 9(5).
+       01 W-DATE-IN       PIC X(10).
+       01 W-JJ            PIC X(2).
+       01 W-MM            PIC X(2).
+       01 W-AAAA          PIC X(4).
+       01 WS-PRICE5       PIC 9(5).
 
        PROCEDURE DIVISION.
       *===============================================================
@@ -69,25 +69,27 @@
                 INPUT VENTESAS-FILE
 
            PERFORM UNTIL WS-EOF-EU = 'Y'
-              READ VENTESEU-FILE
-                 AT END MOVE 'Y' TO WS-EOF-EU
-                 NOT AT END
-                    MOVE EU-O-DATE TO W-DATE-IN
-                    PERFORM MAKE-DATE-ISO
-                    PERFORM MAP-EU-TO-DCL
-                    PERFORM DO-DB2
-              END-READ
+                   READ VENTESEU-FILE
+                   AT END
+                      MOVE 'Y' TO WS-EOF-EU
+                   NOT AT END
+                       MOVE EU-O-DATE TO W-DATE-IN
+                       PERFORM MAKE-DATE-ISO
+                       PERFORM MAP-EU-TO-DCL
+                       PERFORM DO-DB2
+                   END-READ
            END-PERFORM
 
            PERFORM UNTIL WS-EOF-AS = 'Y'
-              READ VENTESAS-FILE
-                 AT END MOVE 'Y' TO WS-EOF-AS
-                 NOT AT END
-                    MOVE AS-O-DATE TO W-DATE-IN
-                    PERFORM MAKE-DATE-ISO
-                    PERFORM MAP-AS-TO-DCL
-                    PERFORM DO-DB2
-              END-READ
+                   READ VENTESAS-FILE
+                   AT END
+                      MOVE 'Y' TO WS-EOF-AS
+                   NOT AT END
+                       MOVE AS-O-DATE TO W-DATE-IN
+                       PERFORM MAKE-DATE-ISO
+                       PERFORM MAP-AS-TO-DCL
+                       PERFORM DO-DB2
+                   END-READ
            END-PERFORM
 
            EXEC SQL COMMIT END-EXEC
@@ -99,49 +101,48 @@
       *===============================================================
        MAP-EU-TO-DCL.
       * ORDERS (host vars DCLGEN)
-           MOVE EU-O-NO     TO O-NO       OF ORDERS
-           MOVE EU-S-NO     TO S-NO       OF ORDERS
-           MOVE EU-C-NO     TO C-NO       OF ORDERS
-           MOVE W-DATE-IN   TO O-DATE     OF ORDERS
+           MOVE EU-O-NO TO ORD-O-NO
+           MOVE EU-S-NO TO ORD-S-NO
+           MOVE EU-C-NO TO ORD-C-NO
+           MOVE W-DATE-IN TO ORD-O-DATE
       * ITEMS
-           MOVE O-NO OF ORDERS TO O-NO    OF ITEMS
-           MOVE EU-P-NO       TO P-NO     OF ITEMS
-           MOVE EU-QUANTITY   TO QUANTITY OF ITEMS
-           MOVE EU-PRICE5     TO WS-PRICE5
+           MOVE ORD-O-NO TO ITM-O-NO
+           MOVE EU-P-NO TO ITM-P-NO
+           MOVE EU-QUANTITY TO ITM-QUANTITY
+           MOVE EU-PRICE5 TO WS-PRICE5
            PERFORM MAKE-PRICE.
 
        MAP-AS-TO-DCL.
       * ORDERS
-           MOVE AS-O-NO     TO O-NO       OF ORDERS
-           MOVE AS-S-NO     TO S-NO       OF ORDERS
-           MOVE AS-C-NO     TO C-NO       OF ORDERS
-           MOVE W-DATE-IN   TO O-DATE     OF ORDERS
+           MOVE AS-O-NO TO ORD-O-NO
+           MOVE AS-S-NO TO ORD-S-NO
+           MOVE AS-C-NO TO ORD-C-NO
+           MOVE W-DATE-IN TO ORD-O-DATE
       * ITEMS
-           MOVE O-NO OF ORDERS TO O-NO    OF ITEMS
-           MOVE AS-P-NO       TO P-NO     OF ITEMS
-           MOVE AS-QUANTITY   TO QUANTITY OF ITEMS
-           MOVE AS-PRICE5     TO WS-PRICE5
+           MOVE ORD-O-NO TO ITM-O-NO
+           MOVE AS-P-NO TO ITM-P-NO
+           MOVE AS-QUANTITY TO ITM-QUANTITY
+           MOVE AS-PRICE5 TO WS-PRICE5
            PERFORM MAKE-PRICE.
 
       *===============================================================
       * PRIX XXXXX -> XXX.XX  (PRICE OF ITEMS)
       *===============================================================
        MAKE-PRICE.
-           COMPUTE PRICE OF ITEMS =
-              FUNCTION NUMVAL(WS-PRICE5) / 100.
+           COMPUTE ITM-PRICE = FUNCTION NUMVAL(WS-PRICE5) / 100.
 
       *===============================================================
       * DATE JJ/MM/AAAA -> YYYY-MM-DD  (dans W-DATE-IN)
       *===============================================================
        MAKE-DATE-ISO.
-           MOVE W-DATE-IN(1:2)  TO W-JJ
-           MOVE W-DATE-IN(4:2)  TO W-MM
-           MOVE W-DATE-IN(7:4)  TO W-AAAA
-           MOVE W-AAAA          TO W-DATE-IN(1:4)
-           MOVE '-'             TO W-DATE-IN(5:1)
-           MOVE W-MM            TO W-DATE-IN(6:2)
-           MOVE '-'             TO W-DATE-IN(8:1)
-           MOVE W-JJ            TO W-DATE-IN(9:2).
+           MOVE W-DATE-IN(1:2) TO W-JJ
+           MOVE W-DATE-IN(4:2) TO W-MM
+           MOVE W-DATE-IN(7:4) TO W-AAAA
+           MOVE W-AAAA TO W-DATE-IN(1:4)
+           MOVE '-' TO W-DATE-IN(5:1)
+           MOVE W-MM TO W-DATE-IN(6:2)
+           MOVE '-' TO W-DATE-IN(8:1)
+           MOVE W-JJ TO W-DATE-IN(9:2).
 
       *===============================================================
       * SQL (UNIQUEMENT VARIABLES DCLGEN) - SCHEMA API9
@@ -151,10 +152,10 @@
            EXEC SQL
               INSERT INTO API9.ORDERS
                      (O_NO, S_NO, C_NO, O_DATE)
-              VALUES (:O-NO  OF ORDERS,
-                      :S-NO  OF ORDERS,
-                      :C-NO  OF ORDERS,
-                      DATE(:O-DATE OF ORDERS))
+              VALUES(:ORD-O-NO,
+                      :ORD-S-NO,
+                      :ORD-C-NO,
+                      DATE(:ORD-O-DATE))
            END-EXEC
            IF SQLCODE NOT = 0 AND SQLCODE NOT = -803
               DISPLAY 'ERR ORDERS SQL=' SQLCODE
@@ -166,10 +167,10 @@
            EXEC SQL
               INSERT INTO API9.ITEMS
                      (O_NO, P_NO, QUANTITY, PRICE)
-              VALUES (:O-NO      OF ITEMS,
-                      :P-NO      OF ITEMS,
-                      :QUANTITY  OF ITEMS,
-                      :PRICE     OF ITEMS)
+              VALUES(:ITM-O-NO,
+                      :ITM-P-NO,
+                      :ITM-QUANTITY,
+                      :ITM-PRICE)
            END-EXEC
            IF SQLCODE NOT = 0 AND SQLCODE NOT = -803
               DISPLAY 'ERR ITEMS SQL=' SQLCODE
@@ -181,9 +182,9 @@
            EXEC SQL
               UPDATE API9.CUSTOMS
                  SET BALANCE = BALANCE
-                             + (:PRICE    OF ITEMS
-                                * :QUANTITY OF ITEMS)
-               WHERE C_NO = :C-NO OF ORDERS
+                             +(:ITM-PRICE
+                                * :ITM-QUANTITY)
+               WHERE C_NO = :ORD-C-NO
            END-EXEC
            IF SQLCODE NOT = 0 AND SQLCODE NOT = 100
               DISPLAY 'ERR CUSTOMS SQL=' SQLCODE
