@@ -1,0 +1,44 @@
+//REPRO03  JOB (ACCT),'LOAD TEST 03',CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID
+//********************************************************************
+//* Charge des enregistrements de test dans les KSDS USERSX et PARTSX
+//********************************************************************
+//STEP1    EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  *
+  /* Build temp sequential datasets with sample records */
+/*
+//BLDUSR   EXEC PGM=IEBGENER
+//SYSUT1   DD  *
+00000001USR1    PASS1234John                Doe                 
+00000002USR2    PASS5678Alice               Smith               
+/*
+//SYSUT2   DD  DISP=(,CATLG),DSN=YOUR.TEST.USERSX.SEQ,UNIT=SYSDA,
+//         SPACE=(TRK,(1,1)),DCB=(RECFM=FB,LRECL=80,BLKSIZE=0)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//
+//BLDPRT   EXEC PGM=IEBGENER
+//SYSUT1   DD  *
+P01USB FLASH DRIVE  BLUE      050NEW YORK      
+P03USB MOUSE        BLACK     100PARIS         
+/*
+//SYSUT2   DD  DISP=(,CATLG),DSN=YOUR.TEST.PARTSX.SEQ,UNIT=SYSDA,
+//         SPACE=(TRK,(1,1)),DCB=(RECFM=FB,LRECL=80,BLKSIZE=0)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//
+//LOADUSR  EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  *
+  REPRO INFILE(INUS) OUTFILE(OUUS)
+/*
+//INUS     DD  DISP=SHR,DSN=YOUR.TEST.USERSX.SEQ
+//OUUS     DD  DISP=SHR,DSN=AJC.EMPLOYE.KSDS
+//
+//LOADPRT  EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  *
+  REPRO INFILE(INPR) OUTFILE(OUPR)
+/*
+//INPR     DD  DISP=SHR,DSN=YOUR.TEST.PARTSX.SEQ
+//OUPR     DD  DISP=SHR,DSN=PROJET.NEWPARTS.KSDS 
