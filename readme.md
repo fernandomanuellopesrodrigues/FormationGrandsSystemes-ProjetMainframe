@@ -1,7 +1,9 @@
 # Projet MAINFRAME AJCFRAME - Analyse détaillée
 
 ## Vue d'ensemble du projet
+
 La société AJCFRAME souhaite moderniser son système de gestion des produits et des ventes avec 4 parties principales :
+
 1. Import de nouveaux produits avec conversion de devises
 2. Import des ventes depuis prestataires européens et asiatiques
 3. Génération de factures
@@ -12,16 +14,20 @@ La société AJCFRAME souhaite moderniser son système de gestion des produits e
 ## PARTIE 1 : Import des nouveaux produits
 
 ### Objectif
+
 Traiter le fichier `PROJET.NEWPRODS.DATA` (format CSV avec séparateur `;`) et insérer les données dans la base.
 
 ### Structure du fichier d'entrée
+
 ```
 Format : NUMERO_PRODUIT;DESCRIPTION;PRIX;DEVISE
 Exemple : P10;USB FLASH DRIVE;15;EU
 ```
+
 ### Étapes de développement
 
 #### 1. Programme de lecture et traitement
+
 ```cobol
 IDENTIFICATION DIVISION.
 PROGRAM-ID. NEWPRODS.
@@ -72,14 +78,17 @@ DEBUT-PGM.
 ```
 
 #### 2. Logique de conversion des devises
+
 - **EU (Euro)** → Dollar : multiplier par 1.0850
 - **YU (Yuan)** → Dollar : multiplier par 0.1450  
 - **DO (Dollar)** → Dollar : pas de conversion (1.0000)
 
 #### 3. Formatage des descriptions
+
 Transformer "USB FLASH DRIVE" en "Usb Flash Drive" (majuscule au début de chaque mot)
 
 #### 4. Insertion en base
+
 ```sql
 INSERT INTO APIX.PRODUCTS (P_NO, DESCRIPTION, PRICE)
 VALUES (:WS-PRODUCT-NO, :WS-FORMATTED-DESC, :WS-CONVERTED-PRICE)
@@ -90,9 +99,11 @@ VALUES (:WS-PRODUCT-NO, :WS-FORMATTED-DESC, :WS-CONVERTED-PRICE)
 ## PARTIE 2 : Import des ventes
 
 ### Objectif
+
 Traiter les fichiers de ventes européennes (`PROJET.VENTESEU.DATA`) et asiatiques (`PROJET.VENTESAS.DATA`) et mettre à jour les balances clients.
 
 ### Structure des fichiers
+
 ```
 Positions : 1-3   : N° Commande
            4-13  : Date (JJ/MM/AAAA)
@@ -107,6 +118,7 @@ Positions : 1-3   : N° Commande
 ### Données analysées
 
 #### Fichier VENTESAS (Asie)
+
 - **Commande 501** (15/10/2022) : Client 0003, Employé 20
   - P02 : 01549 × 10 = 154.90 +
   - P03 : 03575 × 02 = 71.50
@@ -117,16 +129,17 @@ Positions : 1-3   : N° Commande
 - **Commande 505** (17/11/2022) : Client 0004, Employé 40
   - P10 : ? × 01 + (prix manquants)
   - P12 : ? × 04 (prix manquants)
- 
+
 #### Fichier VENTESEU (Europe)
+
 - **Commande 500** (10/10/2022) : Client 0004, Employé 10
   - P01 : 02599 × 03 = 77.97 +
   - P03 : 03575 × 02 = 71.50 +
   - P04 : 01000 × 05 = 50.00
-- **Commande 502** (02/11/2022) : Client 0002, Employé 30 
+- **Commande 502** (02/11/2022) : Client 0002, Employé 30
   - P03 : 03575 × 02 = 71.50 +
   - P04 : 01000 × 05 = 50.00
-- **Commande 503** (05/11/2022) : Client 0001, Employé 50 
+- **Commande 503** (05/11/2022) : Client 0001, Employé 50
   - P11 : ? × 05 = ? + (prix manquants)
 - **Commande 504** (07/11/2022) : Client 0003, Employé 40
   - P14 : ? × 01 = ? + (prix manquants)
@@ -135,6 +148,7 @@ Positions : 1-3   : N° Commande
 ### Étapes de développement
 
 #### 1. Programme de lecture des fichiers
+
 ```cobol
 01 SALES-RECORD.
    05 ORDER-NO           PIC 999.
@@ -148,18 +162,21 @@ Positions : 1-3   : N° Commande
 ```
 
 #### 2. Insertion dans ORDERS
+
 ```sql
 INSERT INTO APIX.ORDERS (O_NO, S_NO, C_NO, O_DATE)
 VALUES (:ORDER-NO, :EMP-NO, :CUST-NO, :FORMATTED-DATE)
 ```
 
 #### 3. Insertion dans ITEMS
+
 ```sql
 INSERT INTO APIX.ITEMS (O_NO, P_NO, QUANTITY, PRICE)
 VALUES (:ORDER-NO, :PROD-NO, :QUANTITY, :PRICE-FORMATTED)
 ```
 
 #### 4. Mise à jour des balances clients
+
 ```sql
 UPDATE APIX.CUSTOMERS 
 SET BALANCE = BALANCE + :TOTAL-ORDER
@@ -171,11 +188,13 @@ WHERE C_NO = :CUST-NO
 ## PARTIE 3 : Génération de factures
 
 ### Objectif
+
 Créer des factures pour chaque commande au format spécifié.
 
 ### Étapes de développement
 
 #### 1. Export des données vers fichier
+
 ```sql
 SELECT O.O_NO, O.O_DATE, C.COMPANY, C.ADDRESS, C.CITY, C.ZIP, C.STATE, E.LNAME, E.FNAME, D.DNAME, I.P_NO, P.DESCRIPTION, I.QUANTITY, I.PRICE
 FROM APIX.ORDERS O
@@ -188,23 +207,27 @@ ORDER BY O.O_NO
 ```
 
 #### 2. Sous-programme de formatage de date
+
 ```cobol
 PROGRAM-ID. DATE-FORMATTER.
 * Convertir 2024-12-19 en "Thursday, December 19, 2024"
 ```
 
 #### 3. Calculs de la facture
+
 - **Sous-total** : Somme des (quantité × prix)
 - **TVA** : Sous-total × taux TVA (lu en SYSIN)  
 - **Commission** : Sous-total × 9.9%
 - **Total** : Sous-total + TVA + Commission
 
 #### 4. Programme principal de génération
+
 ```cobol
 PROGRAM-ID. GENERATE-INVOICES.
 * Lecture du fichier extract
 * Appel du sous-programme de date
 * Formatage et écriture de chaque facture
+
 ```
 
 ---
@@ -212,15 +235,18 @@ PROGRAM-ID. GENERATE-INVOICES.
 ## PARTIE 4 : Interface CICS pour saisie de pièces
 
 ### Objectif
+
 Créer une IHM sécurisée pour ajouter des pièces dans `API7.PROJET.PARTS03.KSDS`.
 
 ### Architecture CICS
 
 #### 1. Fichiers VSAM
+
 - **PARTSX** : Fichier des nouvelles pièces (API7.PROJET.PARTS03.KSDS)
 - **USERSX** : Fichier des employés (API7.PROJET.USERS03.KSDS)
 
 #### 2. Ressources CICS
+
 - **TransactionS** : T03L T03P
 - **Mapset** : MS03
 - **MapS** : MAP03L MAP03P
@@ -228,6 +254,7 @@ Créer une IHM sécurisée pour ajouter des pièces dans `API7.PROJET.PARTS03.KS
 #### 3. Programmes CICS
 
 ##### Programme d'authentification
+
 ```cobol
 PROGRAM-ID. AUTHXX.
 * Vérification login/mot de passe depuis USERSX
@@ -236,6 +263,7 @@ PROGRAM-ID. AUTHXX.
 ```
 
 ##### Programme de saisie de pièces
+
 ```cobol  
 PROGRAM-ID. PARTSXX.
 * Saisie des données pièces
@@ -245,6 +273,7 @@ PROGRAM-ID. PARTSXX.
 ```
 
 #### 4. Maps BMS
+
 ```
 Écran de login :
 +------------------+
@@ -271,6 +300,7 @@ PROGRAM-ID. PARTSXX.
 ## Architecture technique générale
 
 ### Structure des programmes
+
 ```
 PARTIE 1: COBOL Batch
 ├── IMPORT-PRODUCTS.cob (principal)
@@ -295,10 +325,12 @@ PARTIE 4: CICS
 ```
 
 ### Base de données
+
 - **APIX** : Schéma principal (ORDERS, CUSTOMERS, PRODUCTS, etc.)
 - **API1** : Schéma des pièces (PARTS, SUPPLIER, PARTSUPP)
 
 ### JCL d'exécution
+
 ```jcl
 //STEP1   EXEC PGM=IMPORT-PRODUCTS
 //SYSOUT  DD SYSOUT=*
@@ -315,22 +347,26 @@ DO 1.0000
 ## Tests unitaires recommandés
 
 ### Partie 1 - Import produits
+
 - Test conversion devise (EU→DO, YU→DO)
 - Test formatage description
 - Test validation numéro produit unique
 
 ### Partie 2 - Import ventes  
+
 - Test calcul total commande
 - Test mise à jour balance client
 - Test gestion dates
 
 ### Partie 3 - Factures
+
 - Test calculs TVA/Commission
 - Test formatage date en lettres
 - Test structure facture
 
 ### Partie 4 - CICS
-- Test authentification 
+
+- Test authentification
 - Test validation données saisies
 - Test prévention doublons
 
